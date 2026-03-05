@@ -1,6 +1,11 @@
+'use client';
 import Link from 'next/link';
+import { useAuth } from '@/lib/authContext';
 
 export default function RootPage() {
+  const { user, loading } = useAuth();
+  const isSuperAdmin = user?.email === 'abubackerraiyan@gmail.com';
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Nav */}
@@ -9,7 +14,9 @@ export default function RootPage() {
         <nav style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
           <a href="#features" style={{ fontWeight: 500 }}>Features</a>
           <a href="#pricing" style={{ fontWeight: 500 }}>Pricing</a>
-          <Link href="/admin" className="btn-primary" style={{ padding: '8px 20px', fontSize: '14px' }}>Super Admin</Link>
+          {!loading && isSuperAdmin && (
+            <Link href="/admin" className="btn-primary" style={{ padding: '8px 20px', fontSize: '14px' }}>Dashboard</Link>
+          )}
         </nav>
       </header>
 
@@ -130,9 +137,11 @@ export default function RootPage() {
           ))}
         </div>
         <div style={{ textAlign: 'center', marginTop: '32px' }}>
-          <Link href="/admin" className="btn-primary" style={{ padding: '14px 32px', fontSize: '1rem' }}>
-            Open Super Admin Dashboard →
-          </Link>
+          {!loading && isSuperAdmin && (
+            <Link href="/admin" className="btn-primary" style={{ padding: '14px 32px', fontSize: '1rem' }}>
+              Open Super Admin Dashboard →
+            </Link>
+          )}
         </div>
       </section>
 

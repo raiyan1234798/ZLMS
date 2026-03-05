@@ -1,9 +1,13 @@
 'use client';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
+import { useAuth } from '@/lib/authContext';
 
 export default function PlatformLayout({ children }: { children: React.ReactNode }) {
     const [menuOpen, setMenuOpen] = useState(false);
+    const { user, loading } = useAuth();
+
+    const isSuperAdmin = user?.email === 'abubackerraiyan@gmail.com';
 
     return (
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -14,7 +18,9 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
                 <nav className="desktop-nav" style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
                     <a href="#features" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 500 }}>Features</a>
                     <a href="#pricing" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 500 }}>Pricing</a>
-                    <a href="/admin" className="btn-primary" style={{ padding: '8px 16px', fontSize: '14px' }}>Super Admin</a>
+                    {!loading && isSuperAdmin && (
+                        <a href="/admin" className="btn-primary" style={{ padding: '8px 16px', fontSize: '14px' }}>Dashboard</a>
+                    )}
                 </nav>
 
                 {/* Mobile hamburger */}
@@ -37,7 +43,9 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
                     }}>
                         <a href="#features" onClick={() => setMenuOpen(false)} style={{ color: 'var(--foreground)', textDecoration: 'none', fontSize: '0.95rem', fontWeight: 500, padding: '8px 0' }}>Features</a>
                         <a href="#pricing" onClick={() => setMenuOpen(false)} style={{ color: 'var(--foreground)', textDecoration: 'none', fontSize: '0.95rem', fontWeight: 500, padding: '8px 0' }}>Pricing</a>
-                        <a href="/admin" className="btn-primary" style={{ padding: '10px 16px', fontSize: '0.9rem', textAlign: 'center' }}>Super Admin</a>
+                        {!loading && isSuperAdmin && (
+                            <a href="/admin" className="btn-primary" style={{ padding: '10px 16px', fontSize: '0.9rem', textAlign: 'center' }}>Dashboard</a>
+                        )}
                     </div>
                 )}
             </header>

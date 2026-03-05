@@ -48,7 +48,11 @@ export default function TenantLoginPage() {
             await checkAndCreateUserDoc(result.user);
             router.push(`/company/${domain}/dashboard/courses`);
         } catch (error: any) {
-            setErrorMsg(error.message);
+            if (error.code === 'auth/unauthorized-domain') {
+                setErrorMsg('Configuration Required: Please add your domain (zlms.pages.dev) to the Firebase Console -> Authentication -> Settings -> Authorized Domains.');
+            } else {
+                setErrorMsg(error.message);
+            }
             setIsLoading(false);
         }
     };
@@ -70,7 +74,11 @@ export default function TenantLoginPage() {
                 setIsLoading(false);
             }
         } catch (error: any) {
-            setErrorMsg(error.message);
+            if (error.code === 'auth/unauthorized-domain') {
+                setErrorMsg('Configuration Required: Please add your domain (zlms.pages.dev) to the Firebase Console -> Authentication -> Settings -> Authorized Domains.');
+            } else {
+                setErrorMsg(error.message);
+            }
             setIsLoading(false);
         }
     };

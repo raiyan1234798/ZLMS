@@ -44,7 +44,11 @@ export default function AdminLoginPage() {
             const result = await signInWithPopup(auth, googleProvider);
             await checkSuperAdminAndRedirect(result.user);
         } catch (error: any) {
-            setErrorMsg(error.message);
+            if (error.code === 'auth/unauthorized-domain') {
+                setErrorMsg('Configuration Required: Please add your domain (zlms.pages.dev) to the Firebase Console -> Authentication -> Settings -> Authorized Domains.');
+            } else {
+                setErrorMsg(error.message);
+            }
             setIsLoading(false);
         }
     };
@@ -57,7 +61,11 @@ export default function AdminLoginPage() {
             const result = await signInWithEmailAndPassword(auth, email, password);
             await checkSuperAdminAndRedirect(result.user);
         } catch (error: any) {
-            setErrorMsg(error.message);
+            if (error.code === 'auth/unauthorized-domain') {
+                setErrorMsg('Configuration Required: Please add your domain (zlms.pages.dev) to the Firebase Console -> Authentication -> Settings -> Authorized Domains.');
+            } else {
+                setErrorMsg(error.message);
+            }
             setIsLoading(false);
         }
     };

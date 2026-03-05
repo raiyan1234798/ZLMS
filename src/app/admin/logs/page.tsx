@@ -2,7 +2,9 @@
 
 import { MOCK_COMPANIES } from '@/data/mockDb';
 import { Activity, Filter } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const activityLogs = [
     { id: 1, action: 'Company Created', detail: 'Skyline Real Estate was added to the platform', company: 'c3', user: 'Rayan', time: '30 minutes ago', type: 'company' },
@@ -36,13 +38,37 @@ const typeColor = (type: string) => {
 
 export default function ActivityLogsPage() {
     const [filter, setFilter] = useState('all');
-    const filtered = filter === 'all' ? activityLogs : activityLogs.filter(l => l.type === filter);
+    const [platformUsers, setPlatformUsers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'users'));
+                const users: any[] = [];
+                querySnapshot.forEach((doc) => {
+                    users.push({ id: doc.id, ...doc.data() });
+                });
+                setPlatformUsers(users);
+            } catch (error) {
+                console.error("Error fetching users:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchUsers();
+    }, []);
+
+    const activeCompanyIds = loading ? [] : Array.from(new Set(platformUsers.filter(u => u.companyId && u.companyId !== 'platform').map(u => u.companyId)));
+    const activeActivityLogs = loading ? [] : activityLogs.filter(log => activeCompanyIds.includes(log.company));
+
+    const filtered = filter === 'all' ? activeActivityLogs : activeActivityLogs.filter(l => l.type === filter);
 
     return (
         <div>
             <div style={{ marginBottom: '32px' }}>
                 <h1 style={{ fontSize: '1.8rem', marginBottom: '4px' }}>Activity Logs</h1>
-                <p style={{ color: 'var(--text-muted)' }}>Track every action across the platform in real time.</p>
+                <p style={{ color: 'var(--text-muted)' }}>Track every action across the platform active tenants in real time.</p>
             </div>
 
             {/* Filter */}
@@ -57,7 +83,11 @@ export default function ActivityLogsPage() {
 
             {/* Logs */}
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                {filtered.map((log, i) => {
+                {loading ? (
+                    <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading activity logs...</div>
+                ) : filtered.length === 0 ? (
+                    <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No logs found for active tenants.</div>
+                ) : filtered.map((log, i) => {
                     const company = MOCK_COMPANIES.find(c => c.id === log.company);
                     return (
                         <div key={log.id} style={{ padding: '16px 24px', borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none', display: 'flex', alignItems: 'center', gap: '16px' }}>

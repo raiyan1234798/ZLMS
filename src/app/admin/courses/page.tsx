@@ -2,28 +2,57 @@
 
 import { MOCK_COURSES, MOCK_COMPANIES } from '@/data/mockDb';
 import { Search, Plus, BookOpen, Users, CheckCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function AllCoursesPage() {
     const [filter, setFilter] = useState('ALL');
-    const filtered = filter === 'ALL' ? MOCK_COURSES : MOCK_COURSES.filter(c => c.status === filter);
+    const [platformUsers, setPlatformUsers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'users'));
+                const users: any[] = [];
+                querySnapshot.forEach((doc) => {
+                    users.push({ id: doc.id, ...doc.data() });
+                });
+                setPlatformUsers(users);
+            } catch (error) {
+                console.error("Error fetching users:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchUsers();
+    }, []);
+
+    // Active companies are those that have registered users
+    const activeCompanyIds = loading ? [] : Array.from(new Set(platformUsers.filter(u => u.companyId).map(u => u.companyId)));
+
+    // Only courses belonging to active companies
+    const activeCourses = loading ? [] : MOCK_COURSES.filter(c => activeCompanyIds.includes(c.companyId));
+
+    const filtered = filter === 'ALL' ? activeCourses : activeCourses.filter(c => c.status === filter);
 
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
                     <h1 style={{ fontSize: '1.8rem', marginBottom: '4px' }}>All Courses</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>{MOCK_COURSES.length} courses across all companies.</p>
+                    <p style={{ color: 'var(--text-muted)' }}>{activeCourses.length} active courses across all companies.</p>
                 </div>
             </div>
 
             {/* Stats */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '28px' }}>
                 {[
-                    { icon: BookOpen, label: 'Total Courses', value: MOCK_COURSES.length, color: '#4f46e5', bg: '#eef2ff' },
-                    { icon: CheckCircle, label: 'Assigned', value: MOCK_COURSES.filter(c => c.status === 'ASSIGNED').length, color: '#10b981', bg: '#ecfdf5' },
-                    { icon: BookOpen, label: 'Available', value: MOCK_COURSES.filter(c => c.status === 'AVAILABLE').length, color: '#f59e0b', bg: '#fffbeb' },
-                    { icon: Users, label: 'Companies', value: new Set(MOCK_COURSES.map(c => c.companyId)).size, color: '#8b5cf6', bg: '#f5f3ff' },
+                    { icon: BookOpen, label: 'Total Courses', value: activeCourses.length, color: '#4f46e5', bg: '#eef2ff' },
+                    { icon: CheckCircle, label: 'Assigned', value: activeCourses.filter(c => c.status === 'ASSIGNED').length, color: '#10b981', bg: '#ecfdf5' },
+                    { icon: BookOpen, label: 'Available', value: activeCourses.filter(c => c.status === 'AVAILABLE').length, color: '#f59e0b', bg: '#fffbeb' },
+                    { icon: Users, label: 'Active Tenants', value: new Set(activeCourses.map(c => c.companyId)).size, color: '#8b5cf6', bg: '#f5f3ff' },
                 ].map((s, i) => {
                     const Icon = s.icon;
                     return (
@@ -32,7 +61,7 @@ export default function AllCoursesPage() {
                                 <Icon size={20} color={s.color} />
                             </div>
                             <div>
-                                <div style={{ fontSize: '1.4rem', fontWeight: 700 }}>{s.value}</div>
+                                <div style={{ fontSize: '1.4rem', fontWeight: 700 }}>{loading ? '-' : s.value}</div>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{s.label}</div>
                             </div>
                         </div>
@@ -55,7 +84,11 @@ export default function AllCoursesPage() {
 
             {/* Course Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
-                {filtered.map(course => {
+                {loading ? (
+                    <div style={{ color: 'var(--text-muted)' }}>Loading real-time course distribution...</div>
+                ) : activeCourses.length === 0 ? (
+                    <div style={{ color: 'var(--text-muted)' }}>No courses found for active tenants. Try registering users into companies!</div>
+                ) : filtered.map(course => {
                     const company = MOCK_COMPANIES.find(c => c.id === course.companyId);
                     const totalLessons = course.modules.reduce((a, m) => a + m.lessons.length, 0);
                     const totalQuestions = course.modules.reduce((a, m) => a + m.lessons.reduce((b, l) => b + l.questions.length, 0), 0);

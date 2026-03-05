@@ -1,12 +1,37 @@
 "use client";
 
-import { MOCK_USERS, MOCK_COMPANIES } from '@/data/mockDb';
+import { MOCK_COMPANIES } from '@/data/mockDb';
 import { Search, UserPlus, Shield, GraduationCap, Users, BookOpen } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function AllUsersPage() {
     const [filter, setFilter] = useState('ALL');
-    const platformUsers = MOCK_USERS.filter(u => u.companyId !== 'platform');
+    const [platformUsers, setPlatformUsers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'users'));
+                const users: any[] = [];
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    if (data.role !== 'SUPER_ADMIN' && data.companyId !== 'platform') {
+                        users.push({ id: doc.id, ...data });
+                    }
+                });
+                setPlatformUsers(users);
+            } catch (error) {
+                console.error("Error fetching users:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchUsers();
+    }, []);
+
     const filtered = filter === 'ALL' ? platformUsers : platformUsers.filter(u => u.role === filter);
 
     const roleColor = (role: string) => {
@@ -44,7 +69,7 @@ export default function AllUsersPage() {
                                 <Icon size={20} color={s.color} />
                             </div>
                             <div>
-                                <div style={{ fontSize: '1.4rem', fontWeight: 700 }}>{s.value}</div>
+                                <div style={{ fontSize: '1.4rem', fontWeight: 700 }}>{loading ? '-' : s.value}</div>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{s.label}</div>
                             </div>
                         </div>
@@ -67,53 +92,59 @@ export default function AllUsersPage() {
 
             {/* Users Table */}
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                        <tr style={{ background: 'var(--background)' }}>
-                            <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>User</th>
-                            <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Company</th>
-                            <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Role</th>
-                            <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filtered.map(user => {
-                            const company = MOCK_COMPANIES.find(c => c.id === user.companyId);
-                            const rc = roleColor(user.role);
-                            return (
-                                <tr key={user.id} style={{ borderTop: '1px solid var(--border)' }}>
-                                    <td style={{ padding: '14px 24px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: company?.branding.themeColor || '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.8rem', fontWeight: 600 }}>
-                                                {user.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                {loading ? (
+                    <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading users...</div>
+                ) : platformUsers.length === 0 ? (
+                    <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No users found.</div>
+                ) : (
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                            <tr style={{ background: 'var(--background)' }}>
+                                <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>User</th>
+                                <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Company</th>
+                                <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Role</th>
+                                <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filtered.map(user => {
+                                const company = MOCK_COMPANIES.find(c => c.id === user.companyId);
+                                const rc = roleColor(user.role);
+                                return (
+                                    <tr key={user.id} style={{ borderTop: '1px solid var(--border)' }}>
+                                        <td style={{ padding: '14px 24px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: company?.branding.themeColor || '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.8rem', fontWeight: 600 }}>
+                                                    {user.name ? user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2) : '?'}
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontWeight: 500 }}>{user.name || 'Unknown'}</div>
+                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{user.email}</div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div style={{ fontWeight: 500 }}>{user.name}</div>
-                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{user.email}</div>
+                                        </td>
+                                        <td style={{ padding: '14px 24px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: company?.branding.themeColor || '#ccc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.65rem', fontWeight: 600 }}>
+                                                    {company?.name.charAt(0) || '?'}
+                                                </div>
+                                                <span style={{ fontSize: '0.9rem' }}>{company?.name || user.companyId}</span>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '14px 24px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: company?.branding.themeColor || '#ccc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.65rem', fontWeight: 600 }}>
-                                                {company?.name.charAt(0) || '?'}
-                                            </div>
-                                            <span style={{ fontSize: '0.9rem' }}>{company?.name || 'Unknown'}</span>
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '14px 24px' }}>
-                                        <span style={{ padding: '3px 10px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 500, background: rc.bg, color: rc.color }}>
-                                            {user.role === 'COMPANY_ADMIN' ? 'Admin' : user.role === 'TRAINER' ? 'Trainer' : 'Learner'}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '14px 24px' }}>
-                                        <span style={{ padding: '3px 10px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 500, background: '#ecfdf5', color: '#10b981' }}>Active</span>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
+                                        </td>
+                                        <td style={{ padding: '14px 24px' }}>
+                                            <span style={{ padding: '3px 10px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 500, background: rc.bg, color: rc.color }}>
+                                                {user.role === 'COMPANY_ADMIN' ? 'Admin' : user.role === 'TRAINER' ? 'Trainer' : 'Learner'}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '14px 24px' }}>
+                                            <span style={{ padding: '3px 10px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 500, background: '#ecfdf5', color: '#10b981' }}>Active</span>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                )}
             </div>
         </div>
     );

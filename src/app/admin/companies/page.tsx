@@ -1,18 +1,47 @@
 "use client";
 
-import { MOCK_COMPANIES, MOCK_USERS, MOCK_COURSES } from '@/data/mockDb';
+import { MOCK_COMPANIES, MOCK_COURSES } from '@/data/mockDb';
 import Link from 'next/link';
 import {
     Plus, Search, ArrowUpRight, CheckCircle, XCircle, Users, BookOpen
 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function CompaniesPage() {
+    const [platformUsers, setPlatformUsers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'users'));
+                const users: any[] = [];
+                querySnapshot.forEach((doc) => {
+                    users.push({ id: doc.id, ...doc.data() });
+                });
+                setPlatformUsers(users);
+            } catch (error) {
+                console.error("Error fetching users:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchUsers();
+    }, []);
+
+    // Only show companies that actually have registered users in Firebase
+    const activeCompanies = loading ? [] : MOCK_COMPANIES.filter(company =>
+        platformUsers.some(u => u.companyId === company.id)
+    );
+
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <div>
                     <h1 style={{ fontSize: '1.8rem', marginBottom: '4px' }}>Companies</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Manage all {MOCK_COMPANIES.length} tenant companies on the platform.</p>
+                    <p style={{ color: 'var(--text-muted)' }}>Manage active tenant companies on the platform.</p>
                 </div>
                 <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Plus size={16} /> Add Company
@@ -34,8 +63,12 @@ export default function CompaniesPage() {
 
             {/* Companies Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
-                {MOCK_COMPANIES.map((company) => {
-                    const userCount = MOCK_USERS.filter(u => u.companyId === company.id).length;
+                {loading ? (
+                    <div style={{ color: 'var(--text-muted)' }}>Loading real-time company data...</div>
+                ) : activeCompanies.length === 0 ? (
+                    <div style={{ color: 'var(--text-muted)' }}>No active companies with registered users found. Try creating an account in a tenant login!</div>
+                ) : activeCompanies.map((company) => {
+                    const userCount = platformUsers.filter(u => u.companyId === company.id).length;
                     const courseCount = MOCK_COURSES.filter(c => c.companyId === company.id).length;
                     return (
                         <div key={company.id} className="card" style={{ overflow: 'hidden', padding: 0 }}>
@@ -131,22 +164,24 @@ export default function CompaniesPage() {
                 })}
 
                 {/* Add Company Card */}
-                <div className="card" style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px',
-                    border: '2px dashed var(--border)', background: 'transparent', cursor: 'pointer'
-                }}>
-                    <div style={{ textAlign: 'center' }}>
-                        <div style={{
-                            width: '48px', height: '48px', borderRadius: '12px', background: 'var(--background)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px',
-                            border: '1px solid var(--border)'
-                        }}>
-                            <Plus size={24} color="var(--text-muted)" />
+                {!loading && (
+                    <div className="card" style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px',
+                        border: '2px dashed var(--border)', background: 'transparent', cursor: 'pointer'
+                    }}>
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{
+                                width: '48px', height: '48px', borderRadius: '12px', background: 'var(--background)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px',
+                                border: '1px solid var(--border)'
+                            }}>
+                                <Plus size={24} color="var(--text-muted)" />
+                            </div>
+                            <div style={{ fontWeight: 500, marginBottom: '4px' }}>Add New Company</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Create a new tenant</div>
                         </div>
-                        <div style={{ fontWeight: 500, marginBottom: '4px' }}>Add New Company</div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Create a new tenant</div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );

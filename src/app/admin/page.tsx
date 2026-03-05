@@ -1,12 +1,42 @@
 "use client";
 
 import { KanbanBoard } from '@/components/ui/KanbanBoard';
-import { MOCK_COMPANIES, MOCK_USERS, MOCK_COURSES, getTotalStats } from '@/data/mockDb';
+import { MOCK_COMPANIES, MOCK_COURSES } from '@/data/mockDb';
 import Link from 'next/link';
-import { Building2, Users, BookOpen, DollarSign, TrendingUp, ArrowUpRight, Activity, UserCheck, GraduationCap } from 'lucide-react';
+import { Building2, Users, BookOpen, DollarSign, ArrowUpRight, Activity, GraduationCap } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function SuperAdminOverview() {
-    const stats = getTotalStats();
+    const [platformUsers, setPlatformUsers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'users'));
+                const users: any[] = [];
+                querySnapshot.forEach((doc) => {
+                    users.push({ id: doc.id, ...doc.data() });
+                });
+                setPlatformUsers(users);
+            } catch (error) {
+                console.error("Error fetching users:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchUsers();
+    }, []);
+
+    const activeCompanyIds = loading ? [] : Array.from(new Set(platformUsers.filter(u => u.companyId && u.companyId !== 'platform').map(u => u.companyId)));
+    const activeCompanies = loading ? [] : MOCK_COMPANIES.filter(c => activeCompanyIds.includes(c.id));
+    const activeCourses = loading ? [] : MOCK_COURSES.filter(c => activeCompanyIds.includes(c.companyId));
+
+    const totalAdmins = platformUsers.filter(u => u.role === 'COMPANY_ADMIN').length;
+    const totalTrainers = platformUsers.filter(u => u.role === 'TRAINER').length;
+    const totalLearners = platformUsers.filter(u => u.role === 'USER').length;
 
     return (
         <div>
@@ -18,10 +48,10 @@ export default function SuperAdminOverview() {
             {/* Stats Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '40px' }}>
                 {[
-                    { icon: Building2, label: 'Total Companies', value: stats.totalCompanies, sub: `${stats.activeCompanies} active`, color: '#4f46e5', bg: '#eef2ff' },
-                    { icon: Users, label: 'Total Users', value: stats.totalUsers, sub: `${stats.totalAdmins} admins`, color: '#10b981', bg: '#ecfdf5' },
-                    { icon: BookOpen, label: 'Total Courses', value: stats.totalCourses, sub: 'Across all tenants', color: '#f59e0b', bg: '#fffbeb' },
-                    { icon: GraduationCap, label: 'Learners', value: stats.totalLearners, sub: `${stats.totalTrainers} trainers`, color: '#8b5cf6', bg: '#f5f3ff' },
+                    { icon: Building2, label: 'Active Tenants', value: activeCompanyIds.length, sub: `From ${MOCK_COMPANIES.length} available`, color: '#4f46e5', bg: '#eef2ff' },
+                    { icon: Users, label: 'Total Users', value: platformUsers.filter(u => u.companyId !== 'platform').length, sub: `${totalAdmins} admins`, color: '#10b981', bg: '#ecfdf5' },
+                    { icon: BookOpen, label: 'Active Courses', value: activeCourses.length, sub: 'Across active tenants', color: '#f59e0b', bg: '#fffbeb' },
+                    { icon: GraduationCap, label: 'Learners', value: totalLearners, sub: `${totalTrainers} trainers`, color: '#8b5cf6', bg: '#f5f3ff' },
                     { icon: DollarSign, label: 'Monthly Revenue', value: '$12,480', sub: '+18% vs last month', color: '#ec4899', bg: '#fdf2f8' },
                 ].map((stat, i) => {
                     const Icon = stat.icon;
@@ -32,7 +62,7 @@ export default function SuperAdminOverview() {
                                     <Icon size={22} color={stat.color} />
                                 </div>
                             </div>
-                            <div style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '4px' }}>{stat.value}</div>
+                            <div style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '4px' }}>{loading ? '-' : stat.value}</div>
                             <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{stat.label}</div>
                             <div style={{ fontSize: '0.75rem', color: stat.color, marginTop: '4px' }}>{stat.sub}</div>
                         </div>
@@ -45,56 +75,62 @@ export default function SuperAdminOverview() {
                 {/* Companies */}
                 <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
                     <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h3 style={{ fontSize: '1rem' }}>All Companies</h3>
+                        <h3 style={{ fontSize: '1rem' }}>Active Companies</h3>
                         <Link href="/admin/companies" style={{ color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>
                             View all <ArrowUpRight size={14} />
                         </Link>
                     </div>
                     <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead>
-                                <tr style={{ background: 'var(--background)' }}>
-                                    <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Company</th>
-                                    <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Users</th>
-                                    <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Courses</th>
-                                    <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Status</th>
-                                    <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Features</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {MOCK_COMPANIES.map((company) => {
-                                    const userCount = MOCK_USERS.filter(u => u.companyId === company.id).length;
-                                    const courseCount = MOCK_COURSES.filter(c => c.companyId === company.id).length;
-                                    return (
-                                        <tr key={company.id} style={{ borderTop: '1px solid var(--border)' }}>
-                                            <td style={{ padding: '14px 24px' }}>
-                                                <Link href={`/company/${company.subdomain}/admin`} style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none', color: 'inherit' }}>
-                                                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: company.branding.themeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600, fontSize: '0.85rem' }}>
-                                                        {company.name.charAt(0)}
-                                                    </div>
-                                                    <div>
-                                                        <div style={{ fontWeight: 500 }}>{company.name}</div>
-                                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{company.subdomain}.zlms.com</div>
-                                                    </div>
-                                                </Link>
-                                            </td>
-                                            <td style={{ padding: '14px 24px', fontSize: '0.9rem' }}>{userCount}</td>
-                                            <td style={{ padding: '14px 24px', fontSize: '0.9rem' }}>{courseCount}</td>
-                                            <td style={{ padding: '14px 24px' }}>
-                                                <span style={{
-                                                    padding: '4px 12px', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 500,
-                                                    background: company.status === 'ACTIVE' ? '#ecfdf5' : '#fef2f2',
-                                                    color: company.status === 'ACTIVE' ? '#10b981' : '#ef4444'
-                                                }}>
-                                                    {company.status}
-                                                </span>
-                                            </td>
-                                            <td style={{ padding: '14px 24px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>{company.features.length} enabled</td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                        {loading ? (
+                            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading live data...</div>
+                        ) : activeCompanies.length === 0 ? (
+                            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No active companies with registered users.</div>
+                        ) : (
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ background: 'var(--background)' }}>
+                                        <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Company</th>
+                                        <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Users</th>
+                                        <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Courses</th>
+                                        <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Status</th>
+                                        <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Features</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {activeCompanies.map((company) => {
+                                        const userCount = platformUsers.filter(u => u.companyId === company.id).length;
+                                        const courseCount = MOCK_COURSES.filter(c => c.companyId === company.id).length;
+                                        return (
+                                            <tr key={company.id} style={{ borderTop: '1px solid var(--border)' }}>
+                                                <td style={{ padding: '14px 24px' }}>
+                                                    <Link href={`/company/${company.subdomain}/admin`} style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none', color: 'inherit' }}>
+                                                        <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: company.branding.themeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600, fontSize: '0.85rem' }}>
+                                                            {company.name.charAt(0)}
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontWeight: 500 }}>{company.name}</div>
+                                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{company.subdomain}.zlms.com</div>
+                                                        </div>
+                                                    </Link>
+                                                </td>
+                                                <td style={{ padding: '14px 24px', fontSize: '0.9rem' }}>{userCount}</td>
+                                                <td style={{ padding: '14px 24px', fontSize: '0.9rem' }}>{courseCount}</td>
+                                                <td style={{ padding: '14px 24px' }}>
+                                                    <span style={{
+                                                        padding: '4px 12px', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 500,
+                                                        background: company.status === 'ACTIVE' ? '#ecfdf5' : '#fef2f2',
+                                                        color: company.status === 'ACTIVE' ? '#10b981' : '#ef4444'
+                                                    }}>
+                                                        {company.status}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: '14px 24px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>{company.features.length} enabled</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
                 </div>
 
@@ -105,13 +141,11 @@ export default function SuperAdminOverview() {
                     </h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         {[
-                            { text: 'Skyline Real Estate joined the platform', time: '30 min ago', color: '#10b981' },
-                            { text: 'TravelPro completed 15 course enrollments', time: '2 hours ago', color: '#8b5cf6' },
-                            { text: 'MedLearn uploaded HIPAA training materials', time: '3 hours ago', color: '#06b6d4' },
-                            { text: 'Global IT Academy added 2 new trainers', time: '5 hours ago', color: '#3b82f6' },
-                            { text: 'Acme Corp upgraded to Enterprise plan', time: '1 day ago', color: '#ef4444' },
-                            { text: 'NovaTech account suspended (billing)', time: '2 days ago', color: '#f59e0b' },
-                            { text: '47 certificates issued this week', time: '3 days ago', color: '#ec4899' },
+                            { text: 'Global IT Academy registered a new user', time: 'Just now', color: '#10b981' },
+                            { text: 'Acme Corp completed 5 course enrollments', time: '1 hour ago', color: '#8b5cf6' },
+                            { text: 'Skyline uploaded new materials', time: '2 hours ago', color: '#06b6d4' },
+                            { text: 'Admin accessed Global IT dashboard', time: '3 hours ago', color: '#3b82f6' },
+                            { text: 'System backup completed', time: '1 day ago', color: '#ef4444' }
                         ].map((activity, i) => (
                             <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: activity.color, marginTop: '6px', flexShrink: 0 }} />

@@ -1,0 +1,82 @@
+"use client";
+import { useParams } from 'next/navigation';
+import { MOCK_COMPANIES, getCoursesByCompany } from '@/data/mockDb';
+import { Upload, FileText, Video, Image, File, FolderOpen } from 'lucide-react';
+
+export default function MaterialsPage() {
+    const { domain } = useParams() as { domain: string };
+    const company = MOCK_COMPANIES.find(c => c.subdomain === domain);
+    const courses = company ? getCoursesByCompany(company.id) : [];
+    const totalLessons = courses.reduce((a, c) => a + c.modules.reduce((b, m) => b + m.lessons.length, 0), 0);
+
+    const materials = courses.flatMap(course =>
+        course.modules.flatMap(module =>
+            module.lessons.map(lesson => ({
+                id: lesson.id,
+                name: lesson.title,
+                type: lesson.type,
+                course: course.title,
+                module: module.title,
+                size: lesson.type === 'VIDEO' ? `${(15 + Math.floor(Math.random() * 85))} MB` : `${(1 + Math.floor(Math.random() * 5))} MB`,
+                uploaded: 'Feb 2026',
+            }))
+        )
+    );
+
+    const typeIcon = (type: string) => {
+        switch (type) { case 'VIDEO': return <Video size={18} color="#8b5cf6" />; case 'DOCUMENT': return <FileText size={18} color="#3b82f6" />; default: return <File size={18} color="#64748b" />; }
+    };
+
+    return (
+        <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                    <h1 style={{ fontSize: '1.8rem', marginBottom: '4px' }}>Learning Materials</h1>
+                    <p style={{ color: 'var(--text-muted)' }}>{materials.length} files across {courses.length} courses.</p>
+                </div>
+                <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--tenant-primary, var(--primary))' }}><Upload size={16} /> Upload Material</button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                {[
+                    { icon: FolderOpen, label: 'Total Files', value: materials.length, color: company?.branding.themeColor || '#4f46e5' },
+                    { icon: Video, label: 'Videos', value: materials.filter(m => m.type === 'VIDEO').length, color: '#8b5cf6' },
+                    { icon: FileText, label: 'Documents', value: materials.filter(m => m.type === 'DOCUMENT').length, color: '#3b82f6' },
+                    { icon: Image, label: 'Storage Used', value: '1.2 GB', color: '#f59e0b' },
+                ].map((s, i) => {
+                    const Icon = s.icon; return (
+                        <div key={i} className="card" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: s.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon size={20} color={s.color} /></div>
+                            <div><div style={{ fontSize: '1.4rem', fontWeight: 700 }}>{s.value}</div><div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{s.label}</div></div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead><tr style={{ background: 'var(--background)' }}>
+                        <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>File</th>
+                        <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Course</th>
+                        <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Type</th>
+                        <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Size</th>
+                        <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Uploaded</th>
+                    </tr></thead>
+                    <tbody>
+                        {materials.map(mat => (
+                            <tr key={mat.id} style={{ borderTop: '1px solid var(--border)' }}>
+                                <td style={{ padding: '14px 24px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>{typeIcon(mat.type)}<span style={{ fontWeight: 500 }}>{mat.name}</span></div>
+                                </td>
+                                <td style={{ padding: '14px 24px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{mat.course}</td>
+                                <td style={{ padding: '14px 24px' }}><span style={{ padding: '3px 10px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 500, background: mat.type === 'VIDEO' ? '#f5f3ff' : '#eef2ff', color: mat.type === 'VIDEO' ? '#8b5cf6' : '#3b82f6' }}>{mat.type}</span></td>
+                                <td style={{ padding: '14px 24px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{mat.size}</td>
+                                <td style={{ padding: '14px 24px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{mat.uploaded}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}

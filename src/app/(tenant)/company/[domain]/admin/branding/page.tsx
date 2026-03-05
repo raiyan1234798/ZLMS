@@ -1,0 +1,86 @@
+"use client";
+import { useParams } from 'next/navigation';
+import { MOCK_COMPANIES } from '@/data/mockDb';
+import { Palette, Eye } from 'lucide-react';
+import { useState } from 'react';
+
+export default function BrandingPage() {
+    const { domain } = useParams() as { domain: string };
+    const company = MOCK_COMPANIES.find(c => c.subdomain === domain);
+    const [themeColor, setThemeColor] = useState(company?.branding.themeColor || '#4f46e5');
+    const [companyName, setCompanyName] = useState(company?.name || '');
+    const [dashTitle, setDashTitle] = useState(company?.branding.dashboardTitle || '');
+    const [landingText, setLandingText] = useState(company?.branding.landingPageText || '');
+
+    return (
+        <div>
+            <div style={{ marginBottom: '32px' }}>
+                <h1 style={{ fontSize: '1.8rem', marginBottom: '4px' }}>Branding</h1>
+                <p style={{ color: 'var(--text-muted)' }}>Customize your company&apos;s look and feel. Users will never see &quot;Z LMS&quot;.</p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                {/* Settings */}
+                <div>
+                    <div className="card" style={{ marginBottom: '24px' }}>
+                        <h3 style={{ fontSize: '1rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}><Palette size={18} /> Brand Settings</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '6px', color: 'var(--text-muted)' }}>Company Name</label>
+                                <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '0.9rem', outline: 'none', fontFamily: 'inherit' }} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '6px', color: 'var(--text-muted)' }}>Theme Color</label>
+                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                    <input type="color" value={themeColor} onChange={e => setThemeColor(e.target.value)} style={{ width: '50px', height: '40px', borderRadius: '8px', border: '1px solid var(--border)', cursor: 'pointer' }} />
+                                    <input type="text" value={themeColor} onChange={e => setThemeColor(e.target.value)} style={{ flex: 1, padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '0.9rem', outline: 'none', fontFamily: 'monospace' }} />
+                                </div>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '6px', color: 'var(--text-muted)' }}>Dashboard Title</label>
+                                <input type="text" value={dashTitle} onChange={e => setDashTitle(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '0.9rem', outline: 'none', fontFamily: 'inherit' }} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '6px', color: 'var(--text-muted)' }}>Landing Page Text</label>
+                                <textarea value={landingText} onChange={e => setLandingText(e.target.value)} rows={3} style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '0.9rem', outline: 'none', fontFamily: 'inherit', resize: 'vertical' }} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '6px', color: 'var(--text-muted)' }}>Company Logo</label>
+                                <div style={{ padding: '24px', borderRadius: '12px', border: '2px dashed var(--border)', textAlign: 'center', cursor: 'pointer' }}>
+                                    <Upload size={24} color="var(--text-muted)" style={{ margin: '0 auto 8px' }} />
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Drop logo here or click to upload</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>PNG, JPG up to 2MB</div>
+                                </div>
+                            </div>
+                            <button className="btn-primary" style={{ padding: '12px', background: themeColor }}>Save Branding</button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Preview */}
+                <div>
+                    <div className="card">
+                        <h3 style={{ fontSize: '1rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}><Eye size={18} /> Live Preview</h3>
+                        <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border)' }}>
+                            {/* Mock header */}
+                            <div style={{ padding: '12px 20px', background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+                                <span style={{ fontWeight: 700, color: themeColor, fontStyle: 'italic' }}>{companyName}</span>
+                                <div style={{ padding: '4px 12px', borderRadius: '6px', background: themeColor, color: 'white', fontSize: '0.75rem', fontWeight: 500 }}>Login</div>
+                            </div>
+                            {/* Mock landing */}
+                            <div style={{ padding: '40px 20px', background: `linear-gradient(135deg, ${themeColor}08, ${themeColor}15)`, textAlign: 'center' }}>
+                                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: themeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, margin: '0 auto 12px' }}>{companyName.charAt(0)}</div>
+                                <div style={{ fontWeight: 700, marginBottom: '6px' }}>{dashTitle}</div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '280px', margin: '0 auto' }}>{landingText}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function Upload({ size, color, style }: { size: number; color: string; style?: React.CSSProperties }) {
+    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={style}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>;
+}

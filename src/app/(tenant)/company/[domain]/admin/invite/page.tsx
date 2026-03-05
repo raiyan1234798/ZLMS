@@ -1,0 +1,55 @@
+"use client";
+import { useParams } from 'next/navigation';
+import { MOCK_COMPANIES } from '@/data/mockDb';
+import { UserPlus, Mail, Link2, Copy } from 'lucide-react';
+import { useState } from 'react';
+
+export default function InviteUsersPage() {
+    const { domain } = useParams() as { domain: string };
+    const company = MOCK_COMPANIES.find(c => c.subdomain === domain);
+    const [emails, setEmails] = useState('');
+    const [role, setRole] = useState('USER');
+    const inviteLink = `https://${domain}.zlms.com/invite?token=demo-abc123`;
+
+    return (
+        <div>
+            <div style={{ marginBottom: '32px' }}>
+                <h1 style={{ fontSize: '1.8rem', marginBottom: '4px' }}>Invite Users</h1>
+                <p style={{ color: 'var(--text-muted)' }}>Add new team members to {company?.name}.</p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                <div className="card">
+                    <h3 style={{ fontSize: '1rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}><Mail size={18} /> Invite by Email</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '6px', color: 'var(--text-muted)' }}>Email Addresses</label>
+                            <textarea value={emails} onChange={e => setEmails(e.target.value)} placeholder="Enter emails, one per line..." rows={5} style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '0.9rem', outline: 'none', fontFamily: 'inherit', resize: 'vertical' }} />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '6px', color: 'var(--text-muted)' }}>Role</label>
+                            <select value={role} onChange={e => setRole(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '0.9rem', outline: 'none', fontFamily: 'inherit' }}>
+                                <option value="USER">Learner</option>
+                                <option value="TRAINER">Trainer</option>
+                                <option value="COMPANY_ADMIN">Admin</option>
+                            </select>
+                        </div>
+                        <button className="btn-primary" style={{ padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'var(--tenant-primary, var(--primary))' }}><UserPlus size={16} /> Send Invitations</button>
+                    </div>
+                </div>
+                <div className="card">
+                    <h3 style={{ fontSize: '1rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}><Link2 size={18} /> Invite Link</h3>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '16px' }}>Share this link with your team. Anyone with the link can join as a learner.</p>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <input type="text" readOnly value={inviteLink} style={{ flex: 1, padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '0.85rem', outline: 'none', fontFamily: 'monospace', background: 'var(--background)' }} />
+                        <button className="btn-secondary" style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}><Copy size={14} /> Copy</button>
+                    </div>
+                    <div style={{ marginTop: '24px', padding: '16px', borderRadius: '12px', background: 'var(--background)', border: '1px solid var(--border)' }}>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 500, marginBottom: '8px' }}>Pending Invitations</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--tenant-primary, var(--primary))' }}>3</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Awaiting acceptance</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}

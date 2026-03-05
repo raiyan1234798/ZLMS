@@ -1,0 +1,60 @@
+"use client";
+import { useParams } from 'next/navigation';
+import { MOCK_COMPANIES, getUsersByCompany, getAdminForCompany } from '@/data/mockDb';
+import { Search, UserPlus, Shield, GraduationCap, Users } from 'lucide-react';
+
+export default function CompanyUsersPage() {
+    const { domain } = useParams() as { domain: string };
+    const company = MOCK_COMPANIES.find(c => c.subdomain === domain);
+    const users = company ? getUsersByCompany(company.id) : [];
+
+    const roleColor = (role: string) => {
+        switch (role) { case 'COMPANY_ADMIN': return { bg: '#eef2ff', color: '#4f46e5' }; case 'TRAINER': return { bg: '#fef3c7', color: '#d97706' }; default: return { bg: '#ecfdf5', color: '#10b981' }; }
+    };
+
+    return (
+        <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                    <h1 style={{ fontSize: '1.8rem', marginBottom: '4px' }}>Team Members</h1>
+                    <p style={{ color: 'var(--text-muted)' }}>{users.length} members in {company?.name}</p>
+                </div>
+                <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--tenant-primary, var(--primary))' }}><UserPlus size={16} /> Invite User</button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                {[
+                    { icon: Users, label: 'Total', value: users.length, color: company?.branding.themeColor || '#4f46e5' },
+                    { icon: Shield, label: 'Admins', value: users.filter(u => u.role === 'COMPANY_ADMIN').length, color: '#4f46e5' },
+                    { icon: GraduationCap, label: 'Trainers', value: users.filter(u => u.role === 'TRAINER').length, color: '#f59e0b' },
+                    { icon: GraduationCap, label: 'Learners', value: users.filter(u => u.role === 'USER').length, color: '#10b981' },
+                ].map((s, i) => {
+                    const Icon = s.icon; return (
+                        <div key={i} className="card" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: s.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon size={20} color={s.color} /></div>
+                            <div><div style={{ fontSize: '1.4rem', fontWeight: 700 }}>{s.value}</div><div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{s.label}</div></div>
+                        </div>
+                    );
+                })}
+            </div>
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ position: 'relative' }}><Search size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} /><input type="text" placeholder="Search members..." style={{ width: '100%', padding: '10px 14px 10px 42px', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '0.9rem', outline: 'none', fontFamily: 'inherit' }} /></div>
+                </div>
+                {users.map((user, i) => {
+                    const rc = roleColor(user.role); return (
+                        <div key={user.id} style={{ padding: '14px 24px', borderBottom: i < users.length - 1 ? '1px solid var(--border)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: user.role === 'COMPANY_ADMIN' ? 'var(--tenant-primary, var(--primary))' : user.role === 'TRAINER' ? '#f59e0b' : '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.8rem', fontWeight: 600 }}>{user.name.split(' ').map(n => n[0]).join('').slice(0, 2)}</div>
+                                <div><div style={{ fontWeight: 500 }}>{user.name}</div><div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{user.email}</div></div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <span style={{ padding: '3px 10px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 500, background: rc.bg, color: rc.color }}>{user.role === 'COMPANY_ADMIN' ? 'Admin' : user.role === 'TRAINER' ? 'Trainer' : 'Learner'}</span>
+                                <span style={{ padding: '3px 10px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 500, background: '#ecfdf5', color: '#10b981' }}>Active</span>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}

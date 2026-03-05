@@ -73,6 +73,18 @@ export const MOCK_COMPANIES: Company[] = [
         },
         features: ['courses', 'video', 'analytics'],
         status: 'SUSPENDED'
+    },
+    {
+        id: 'c7',
+        name: 'Demo Enterprise',
+        subdomain: 'demo',
+        branding: {
+            themeColor: '#e11d48',
+            dashboardTitle: 'Demo Enterprise Portal',
+            landingPageText: 'Welcome to the interactive demo portal for all platform features.'
+        },
+        features: ['courses', 'video', 'quizzes', 'analytics', 'certificates', 'teams', 'assignments'],
+        status: 'ACTIVE'
     }
 ];
 
@@ -119,6 +131,12 @@ export const MOCK_USERS: User[] = [
     // ── NovaTech Solutions (c6 — suspended) ──
     { id: 'u26', companyId: 'c6', name: 'Frank Norton', email: 'frank@novatech.com', role: 'COMPANY_ADMIN' },
     { id: 'u27', companyId: 'c6', name: 'Grace Liu', email: 'grace@novatech.com', role: 'USER' },
+
+    // ── Demo Enterprise (c7) ──
+    { id: 'u28', companyId: 'c7', name: 'Demo Admin', email: 'admin@demo.com', role: 'COMPANY_ADMIN' },
+    { id: 'u29', companyId: 'c7', name: 'Demo Trainer', email: 'trainer@demo.com', role: 'TRAINER' },
+    { id: 'u30', companyId: 'c7', name: 'Demo User 1', email: 'user1@demo.com', role: 'USER' },
+    { id: 'u31', companyId: 'c7', name: 'Demo User 2', email: 'user2@demo.com', role: 'USER' },
 ];
 
 // ─── COURSES ────────────────────────────────────────────────────────────────────
@@ -139,11 +157,11 @@ export const MOCK_COURSES: Course[] = [
                         id: 'l1',
                         title: 'What is React?',
                         type: 'VIDEO',
-                        contentUrl: 'https://example.com/video1',
+                        contentUrl: 'https://vjs.zencdn.net/v/oceans.mp4',
                         questions: [
                             {
                                 id: 'q1',
-                                timestamp: 120,
+                                timestamp: 5,
                                 text: 'What year was React first released by Facebook?',
                                 type: 'MULTIPLE_CHOICE',
                                 options: ['2010', '2013', '2015', '2020'],
@@ -155,11 +173,11 @@ export const MOCK_COURSES: Course[] = [
                         id: 'l2',
                         title: 'Setting Up Your Environment',
                         type: 'VIDEO',
-                        contentUrl: 'https://example.com/video2',
+                        contentUrl: 'https://vjs.zencdn.net/v/oceans.mp4',
                         questions: [
                             {
                                 id: 'q2',
-                                timestamp: 90,
+                                timestamp: 8,
                                 text: 'Which command creates a new React app?',
                                 type: 'MULTIPLE_CHOICE',
                                 options: ['npm start', 'npx create-react-app', 'react init', 'npm build'],

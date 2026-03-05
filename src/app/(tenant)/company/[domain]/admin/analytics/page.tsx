@@ -21,8 +21,8 @@ export default function CompanyAnalyticsPage() {
                 {[
                     { icon: Users, label: 'Active Users', value: learners.length, change: '+3', color: company?.branding.themeColor || '#4f46e5' },
                     { icon: BookOpen, label: 'Courses', value: courses.length, change: '+1', color: '#10b981' },
-                    { icon: Award, label: 'Certificates', value: Math.floor(learners.length * 2.5), change: '+5', color: '#f59e0b' },
-                    { icon: TrendingUp, label: 'Completion Rate', value: `${65 + Math.floor(Math.random() * 25)}%`, change: '+8%', color: '#8b5cf6' },
+                    { icon: Award, label: 'Certificates', value: learners.length * 2 + 1, change: '+5', color: '#f59e0b' },
+                    { icon: TrendingUp, label: 'Completion Rate', value: `${72 + (learners.length % 18)}%`, change: '+8%', color: '#8b5cf6' },
                 ].map((s, i) => {
                     const Icon = s.icon; return (
                         <div key={i} className="card">
@@ -40,8 +40,8 @@ export default function CompanyAnalyticsPage() {
             {/* Course Performance */}
             <div className="card" style={{ marginBottom: '24px' }}>
                 <h3 style={{ marginBottom: '20px', fontSize: '1rem' }}>Course Performance</h3>
-                {courses.map(course => {
-                    const completion = 40 + Math.floor(Math.random() * 50);
+                {courses.map((course, idx) => {
+                    const completion = 50 + ((idx * 23 + course.modules.length * 7) % 40);
                     return (
                         <div key={course.id} style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px', padding: '12px', borderRadius: '10px', border: '1px solid var(--border)' }}>
                             <div style={{ flex: 1 }}>
@@ -61,8 +61,8 @@ export default function CompanyAnalyticsPage() {
             <div className="card">
                 <h3 style={{ marginBottom: '16px', fontSize: '1rem' }}>Weekly Activity</h3>
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '160px', padding: '0 20px' }}>
-                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
-                        const height = 20 + Math.floor(Math.random() * 80);
+                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => {
+                        const height = 25 + ((i * 31 + 17) % 70);
                         return (
                             <div key={day} style={{ flex: 1, textAlign: 'center' }}>
                                 <div style={{ height: `${height}%`, background: `linear-gradient(180deg, ${company?.branding.themeColor || '#4f46e5'}, ${company?.branding.themeColor || '#4f46e5'}88)`, borderRadius: '6px 6px 0 0', minHeight: '16px' }} />

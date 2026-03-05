@@ -10,28 +10,42 @@ import { db } from '@/lib/firebase';
 
 export default function SuperAdminOverview() {
     const [platformUsers, setPlatformUsers] = useState<any[]>([]);
+    const [firebaseCompanies, setFirebaseCompanies] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchUsers = async () => {
+        const fetchData = async () => {
             try {
-                const querySnapshot = await getDocs(collection(db, 'users'));
+                const [usersSnap, companiesSnap] = await Promise.all([
+                    getDocs(collection(db, 'users')),
+                    getDocs(collection(db, 'companies')),
+                ]);
                 const users: any[] = [];
-                querySnapshot.forEach((doc) => {
+                usersSnap.forEach((doc) => {
                     users.push({ id: doc.id, ...doc.data() });
                 });
                 setPlatformUsers(users);
+
+                const fbCompanies: any[] = [];
+                companiesSnap.forEach((doc) => {
+                    fbCompanies.push({ id: doc.id, ...doc.data() });
+                });
+                setFirebaseCompanies(fbCompanies);
             } catch (error) {
-                console.error("Error fetching users:", error);
+                console.error("Error fetching data:", error);
             } finally {
                 setLoading(false);
             }
         };
-        fetchUsers();
+        fetchData();
     }, []);
 
     const activeCompanyIds = loading ? [] : Array.from(new Set(platformUsers.filter(u => u.companyId && u.companyId !== 'platform').map(u => u.companyId)));
-    const activeCompanies = loading ? [] : MOCK_COMPANIES.filter(c => activeCompanyIds.includes(c.id));
+    const activeMockCompanies = loading ? [] : MOCK_COMPANIES.filter(c => activeCompanyIds.includes(c.id));
+    const activeCompanies = loading ? [] : [
+        ...activeMockCompanies.map(c => ({ id: c.id, name: c.name, subdomain: c.subdomain, themeColor: c.branding.themeColor, features: c.features, status: c.status })),
+        ...firebaseCompanies.map(c => ({ id: c.id, name: c.name, subdomain: c.subdomain, themeColor: c.themeColor, features: c.features || [], status: c.status || 'ACTIVE' })),
+    ];
     const activeCourses = loading ? [] : MOCK_COURSES.filter(c => activeCompanyIds.includes(c.companyId));
 
     const totalAdmins = platformUsers.filter(u => u.role === 'COMPANY_ADMIN').length;
@@ -104,7 +118,7 @@ export default function SuperAdminOverview() {
                                             <tr key={company.id} style={{ borderTop: '1px solid var(--border)' }}>
                                                 <td style={{ padding: '14px 24px' }}>
                                                     <Link href={`/company/${company.subdomain}/admin`} style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none', color: 'inherit' }}>
-                                                        <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: company.branding.themeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600, fontSize: '0.85rem' }}>
+                                                        <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: company.themeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600, fontSize: '0.85rem' }}>
                                                             {company.name.charAt(0)}
                                                         </div>
                                                         <div>

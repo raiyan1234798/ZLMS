@@ -264,20 +264,10 @@ button {
   }
 }
 
-@media (max-width: 768px) {
-  .dashboard-layout {
-    flex-direction: column;
-  }
-
-  .dashboard-sidebar {
-    position: fixed;
-    height: 100vh;
-    transform: translateX(-100%);
-
-    &.open {
-      transform: translateX(0);
-    }
-  }
+/* Mobile-only elements: hidden on desktop by default */
+.mobile-menu,
+.mobile-close {
+  display: none;
 }
 
 /* Input Fields */
@@ -297,5 +287,168 @@ button {
     border-color: var(--primary);
     background: var(--surface);
     box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+  }
+}
+
+/* ========================== */
+/* RESPONSIVE / MOBILE STYLES */
+/* ========================== */
+
+/* Tablet breakpoint (1024px) */
+@media (max-width: 1024px) {
+  .dashboard-main>div:last-child {
+    padding: 24px !important;
+  }
+}
+
+/* Mobile breakpoint (768px) */
+@media (max-width: 768px) {
+
+  /* Dashboard Layout */
+  .dashboard-layout {
+    flex-direction: column;
+  }
+
+  .dashboard-sidebar {
+    position: fixed;
+    height: 100vh;
+    transform: translateX(-100%);
+    width: 280px;
+
+    &.open {
+      transform: translateX(0);
+    }
+  }
+
+  /* Show mobile menu + close buttons */
+  .mobile-menu,
+  .mobile-close {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  /* Dashboard top bar */
+  .dashboard-main>div:first-child {
+    padding: 12px 16px !important;
+  }
+
+  /* Dashboard content area */
+  .dashboard-main>div:last-child {
+    padding: 16px !important;
+  }
+
+  /* Page headings */
+  h1 {
+    font-size: 1.5rem !important;
+  }
+
+  /* Container padding */
+  .container {
+    padding: 0 16px;
+  }
+
+  /* Cards: reduce padding */
+  .card {
+    padding: 16px;
+
+    &:hover {
+      transform: none;
+    }
+  }
+
+  /* Buttons: prevent hover transform on touch */
+  .btn-primary:hover,
+  .btn-secondary:hover {
+    transform: none;
+  }
+
+  .hover-scale:hover {
+    transform: none;
+  }
+
+  /* Glass panel header on tenant pages */
+  .glass-panel {
+    padding: 12px 16px !important;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    h2 {
+      font-size: 1.1rem !important;
+    }
+  }
+
+  /* Responsive table wrapper */
+  .card table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  .card table th,
+  .card table td {
+    padding: 10px 14px !important;
+    font-size: 0.8rem !important;
+  }
+
+  /* Stat card grids → stack on mobile */
+  .card>div[style*="display: grid"],
+  div[style*="gridTemplateColumns: repeat(auto-fit"] {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* Modals: full width on mobile */
+  div[style*="position: fixed"][style*="inset: 0"]>div[style*="maxWidth"] {
+    max-width: calc(100vw - 32px) !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    margin: 16px !important;
+  }
+
+  /* Fix company table columns on mobile */
+  div[style*="gridTemplateColumns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Small mobile (480px) */
+@media (max-width: 480px) {
+
+  h1 {
+    font-size: 1.3rem !important;
+  }
+
+  /* Stat grids: full width single column */
+  div[style*="gridTemplateColumns: repeat(auto-fit"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Reduce card padding further */
+  .card {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  /* Login page adjustments */
+  .card[style*="maxWidth: '440px'"] {
+    padding: 24px !important;
+  }
+
+  /* Button sizes */
+  .btn-primary,
+  .btn-secondary {
+    padding: 10px 18px;
+    font-size: 0.9rem;
+  }
+
+  /* Landing page hero */
+  div[style*="padding: '100px 20px'"] {
+    padding: 40px 16px !important;
   }
 }

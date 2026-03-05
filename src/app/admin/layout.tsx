@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import {
     LayoutDashboard, Users, BookOpen, BarChart3, Settings,
     Shield, CreditCard, Bell, Menu, X, ChevronRight,
@@ -24,6 +27,39 @@ const navItems = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [activeItem, setActiveItem] = useState('/admin');
+    const [isAuthChecking, setIsAuthChecking] = useState(true);
+    const [isAuthorized, setIsAuthorized] = useState(false);
+
+    const pathname = usePathname();
+    const router = useRouter();
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (user && user.email === 'abubackerraiyan@gmail.com') {
+                setIsAuthorized(true);
+            } else {
+                setIsAuthorized(false);
+                if (pathname !== '/admin/login') {
+                    router.push('/admin/login');
+                }
+            }
+            setIsAuthChecking(false);
+        });
+
+        return () => unsubscribe();
+    }, [pathname, router]);
+
+    if (isAuthChecking) {
+        return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Validating super admin access...</div>;
+    }
+
+    if (pathname === '/admin/login') {
+        return <>{children}</>;
+    }
+
+    if (!isAuthorized) {
+        return null;
+    }
 
     return (
         <div className="dashboard-layout">
@@ -45,7 +81,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Super Admin</div>
                         </div>
                     </div>
-                    <button onClick={() => setSidebarOpen(false)} style={{ display: 'none' }} className="mobile-close">
+                    <button onClick={() => setSidebarOpen(false)} className="mobile-close" aria-label="Close sidebar">
                         <X size={20} />
                     </button>
                 </div>
@@ -96,8 +132,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {/* Top bar */}
                 <div style={{ padding: '16px 32px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 30 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <button onClick={() => setSidebarOpen(true)} style={{ display: 'none' }} className="mobile-menu">
-                            <Menu size={24} />
+                        <button onClick={() => setSidebarOpen(true)} className="mobile-menu" aria-label="Open sidebar">
+                            <Menu size={22} />
                         </button>
                         <div>
                             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>

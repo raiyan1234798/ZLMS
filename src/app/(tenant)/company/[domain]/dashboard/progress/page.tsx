@@ -47,7 +47,7 @@ export default function ProgressPage() {
                 <h3 style={{ marginBottom: '24px', fontSize: '1rem' }}>Course Progress</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     {courses.map((course, i) => {
-                        const progress = course.status === 'ASSIGNED' ? 30 + Math.floor(Math.random() * 50) : Math.floor(Math.random() * 20);
+                        const progress = course.status === 'ASSIGNED' ? 35 + ((i * 19 + 7) % 45) : 5 + ((i * 11) % 15);
                         const lessonsCompleted = Math.floor(course.modules.reduce((a, m) => a + m.lessons.length, 0) * progress / 100);
                         const totalL = course.modules.reduce((a, m) => a + m.lessons.length, 0);
                         return (
@@ -72,8 +72,8 @@ export default function ProgressPage() {
             <div className="card">
                 <h3 style={{ marginBottom: '16px', fontSize: '1rem' }}>Weekly Learning Activity</h3>
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '140px', padding: '0 10px' }}>
-                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
-                        const height = 15 + Math.floor(Math.random() * 85);
+                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => {
+                        const height = 20 + ((i * 29 + 11) % 75);
                         return (
                             <div key={day} style={{ flex: 1, textAlign: 'center' }}>
                                 <div style={{ height: `${height}%`, background: `linear-gradient(180deg, ${themeColor}, ${themeColor}88)`, borderRadius: '6px 6px 0 0', minHeight: '12px' }} />

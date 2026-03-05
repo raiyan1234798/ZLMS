@@ -13,7 +13,7 @@ export default function LearnerCertificatesPage() {
     const certs = courses.map((course, i) => ({
         id: `cert-${course.id}`,
         course: course.title,
-        score: 75 + Math.floor(Math.random() * 25),
+        score: 78 + ((i * 11 + 3) % 20),
         date: `Feb ${15 + i}, 2026`,
         status: i === 0 ? 'earned' : 'in-progress',
     }));

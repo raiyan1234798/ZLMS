@@ -32,11 +32,11 @@ export default function AnalyticsPage() {
     const activeCompanies = loading ? [] : MOCK_COMPANIES.filter(c => activeCompanyIds.includes(c.id));
     const activeCourses = loading ? [] : MOCK_COURSES.filter(c => activeCompanyIds.includes(c.companyId));
 
-    const companyAnalytics = activeCompanies.map(company => {
+    const companyAnalytics = activeCompanies.map((company, idx) => {
         const users = platformUsers.filter(u => u.companyId === company.id);
         const courses = MOCK_COURSES.filter(c => c.companyId === company.id);
-        const completionRate = 45 + Math.floor(Math.random() * 40);
-        return { company, users: users.length, courses: courses.length, completionRate, engagementScore: 60 + Math.floor(Math.random() * 35) };
+        const completionRate = 55 + ((idx * 17 + users.length * 3) % 35);
+        return { company, users: users.length, courses: courses.length, completionRate, engagementScore: 65 + ((idx * 13 + courses.length * 7) % 30) };
     });
 
     return (
@@ -113,7 +113,7 @@ export default function AnalyticsPage() {
                 <h3 style={{ marginBottom: '16px', fontSize: '1rem' }}>Weekly Activity</h3>
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '200px', padding: '0 20px' }}>
                     {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => {
-                        const height = 30 + Math.floor(Math.random() * 70);
+                        const height = 30 + ((i * 37 + 13) % 65);
                         return (
                             <div key={day} style={{ flex: 1, textAlign: 'center' }}>
                                 <div style={{ height: `${height}%`, background: `linear-gradient(180deg, #4f46e5, #7c3aed)`, borderRadius: '6px 6px 0 0', minHeight: '20px', transition: 'height 0.3s ease' }} />

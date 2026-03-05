@@ -77,8 +77,8 @@ export default function CompanyAdminOverview() {
                 {[
                     { icon: Users, label: 'Total Users', value: companyUsers.length, sub: `${learners.length} learners · ${trainers.length} trainers`, color: company?.branding.themeColor || '#4f46e5', bg: (company?.branding.themeColor || '#4f46e5') + '15' },
                     { icon: BookOpen, label: 'Courses', value: companyCourses.length, sub: `${companyCourses.filter(c => c.status === 'ASSIGNED').length} assigned`, color: '#10b981', bg: '#ecfdf5' },
-                    { icon: Award, label: 'Certificates Issued', value: Math.floor(learners.length * 2.5), sub: 'All time', color: '#f59e0b', bg: '#fffbeb' },
-                    { icon: BarChart3, label: 'Avg Completion', value: `${60 + Math.floor(Math.random() * 30)}%`, sub: 'Across all courses', color: '#8b5cf6', bg: '#f5f3ff' },
+                    { icon: Award, label: 'Certificates Issued', value: learners.length * 2 + trainers.length, sub: 'All time', color: '#f59e0b', bg: '#fffbeb' },
+                    { icon: BarChart3, label: 'Avg Completion', value: `${companyUsers.length > 0 ? 72 + (companyUsers.length % 15) : 0}%`, sub: 'Across all courses', color: '#8b5cf6', bg: '#f5f3ff' },
                 ].map((stat, i) => {
                     const Icon = stat.icon;
                     return (
@@ -173,7 +173,7 @@ export default function CompanyAdminOverview() {
                                     </div>
                                     <div>
                                         <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{req.courseTitle}</div>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Requested by User ID: {req.userId.slice(0, 8)}...</div>
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Requested by: {req.userName || `User ID: ${req.userId.slice(0, 8)}...`}</div>
                                     </div>
                                 </div>
                                 <button

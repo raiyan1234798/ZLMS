@@ -16,7 +16,7 @@ export default function CertificatesPage() {
             userName: user.name,
             courseName: course.title,
             issuedDate: `Feb ${10 + i}, 2026`,
-            score: 70 + Math.floor(Math.random() * 30),
+            score: 75 + ((i * 13 + 5) % 25),
         }))
     ).slice(0, 8);
 

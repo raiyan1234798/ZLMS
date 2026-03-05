@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { MOCK_COURSES, MOCK_COMPANIES } from '@/data/mockDb';
 import Link from 'next/link';
@@ -23,6 +23,12 @@ export default function CoursePlayer() {
     const [progress, setProgress] = useState(35);
     const [playbackSpeed, setPlaybackSpeed] = useState(1);
 
+    // New states for real video
+    const [activeLessonId, setActiveLessonId] = useState(course?.modules[0]?.lessons[0]?.id || '');
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const videoRef = useRef<HTMLVideoElement>(null);
+
     if (!course) {
         return (
             <div style={{ padding: '100px', textAlign: 'center' }}>
@@ -34,8 +40,40 @@ export default function CoursePlayer() {
         );
     }
 
-    const currentLesson = course.modules[0]?.lessons[0];
-    const currentQuestion = currentLesson?.questions[0];
+    const allLessons = course.modules.flatMap(m => m.lessons);
+    const currentLesson = allLessons.find(l => l.id === activeLessonId) || course.modules[0]?.lessons[0];
+    const currentQuestion = currentLesson?.questions?.[0];
+
+    // Effect to toggle video play state
+    useEffect(() => {
+        if (videoRef.current) {
+            if (isPlaying && !showQuestion) {
+                videoRef.current.play().catch(e => console.error("Video play failed:", e));
+            } else {
+                videoRef.current.pause();
+            }
+        }
+    }, [isPlaying, showQuestion, activeLessonId]);
+
+    // Cleanup on lesson change
+    useEffect(() => {
+        setIsPlaying(true);
+        setShowQuestion(false);
+        setAnswered(false);
+        setSelectedAnswer('');
+        setCurrentTime(0);
+        if (videoRef.current) {
+            videoRef.current.currentTime = 0;
+            videoRef.current.playbackRate = playbackSpeed;
+        }
+    }, [activeLessonId]);
+
+    // Handle playback speed
+    useEffect(() => {
+        if (videoRef.current) {
+            videoRef.current.playbackRate = playbackSpeed;
+        }
+    }, [playbackSpeed]);
 
     const handleAnswer = (answer: string) => {
         setSelectedAnswer(answer);
@@ -60,179 +98,217 @@ export default function CoursePlayer() {
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                     {/* Video Container */}
                     <div style={{ flex: 1, background: '#000', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {/* Simulated Video */}
-                        <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #1a1a2e, #16213e)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                            <div style={{ textAlign: 'center' }}>
-                                <div style={{
-                                    width: '80px', height: '80px', borderRadius: '50%',
-                                    background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    margin: '0 auto 16px', cursor: 'pointer',
-                                    border: '2px solid rgba(255,255,255,0.2)',
-                                    transition: 'all 0.2s ease'
+                        {currentLesson?.type === 'VIDEO' && currentLesson.contentUrl && currentLesson.contentUrl !== '#' ? (
+                            <video
+                                ref={videoRef}
+                                src={currentLesson.contentUrl}
+                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                onClick={() => setIsPlaying(!isPlaying)}
+                                onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+                                onTimeUpdate={(e) => {
+                                    const time = e.currentTarget.currentTime;
+                                    setCurrentTime(time);
+                                    if (currentQuestion && !showQuestion && !answered && currentQuestion.timestamp !== undefined) {
+                                        if (time >= currentQuestion.timestamp && time < currentQuestion.timestamp + 1) {
+                                            setIsPlaying(false);
+                                            setShowQuestion(true);
+                                        }
+                                    }
                                 }}
-                                    onClick={() => { setIsPlaying(!isPlaying); if (!showQuestion) setTimeout(() => setShowQuestion(true), 2000); }}
-                                >
-                                    {isPlaying ? <Pause size={32} /> : <Play size={32} style={{ marginLeft: '4px' }} />}
-                                </div>
-                                <p style={{ color: '#888', fontSize: '0.9rem' }}>{currentLesson?.title || 'No lesson available'}</p>
-                            </div>
-
-                            {/* Inline Question Overlay */}
-                            {showQuestion && currentQuestion && !answered && (
-                                <div style={{
-                                    position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    backdropFilter: 'blur(8px)', padding: '20px'
-                                }}>
+                            />
+                        ) : (
+                            <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #1a1a2e, #16213e)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                                <div style={{ textAlign: 'center' }}>
                                     <div style={{
-                                        background: '#1e1e2e', borderRadius: '16px', padding: '40px',
-                                        maxWidth: '520px', width: '100%', border: '1px solid #333'
-                                    }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#f59e0b', fontSize: '0.8rem', fontWeight: 500 }}>
-                                            <Clock size={14} /> Question at {Math.floor((currentQuestion.timestamp || 0) / 60)}:{String((currentQuestion.timestamp || 0) % 60).padStart(2, '0')}
-                                        </div>
-                                        <h3 style={{ marginBottom: '24px', fontSize: '1.2rem', lineHeight: 1.4 }}>{currentQuestion.text}</h3>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                            {currentQuestion.options?.map((option, idx) => (
-                                                <button
-                                                    key={idx}
-                                                    onClick={() => handleAnswer(option)}
-                                                    style={{
-                                                        padding: '14px 18px', borderRadius: '10px', textAlign: 'left',
-                                                        background: '#2a2a3e', border: '1px solid #3a3a4e',
-                                                        color: 'white', fontSize: '0.95rem', cursor: 'pointer',
-                                                        transition: 'all 0.15s ease'
-                                                    }}
-                                                >
-                                                    <span style={{ color: '#888', marginRight: '12px', fontWeight: 600 }}>{String.fromCharCode(65 + idx)}</span>
-                                                    {option}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <p style={{ marginTop: '16px', fontSize: '0.8rem', color: '#666' }}>Answer to continue the lesson</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Answer Feedback */}
-                            {answered && (
-                                <div style={{
-                                    position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    backdropFilter: 'blur(8px)'
-                                }}>
-                                    <div style={{ textAlign: 'center' }}>
-                                        <div style={{
-                                            width: '64px', height: '64px', borderRadius: '50%',
-                                            background: selectedAnswer === currentQuestion?.correctAnswer ? '#10b98133' : '#ef444433',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            margin: '0 auto 16px'
-                                        }}>
-                                            <CheckCircle size={32} color={selectedAnswer === currentQuestion?.correctAnswer ? '#10b981' : '#ef4444'} />
-                                        </div>
-                                        <h3 style={{ marginBottom: '8px' }}>
-                                            {selectedAnswer === currentQuestion?.correctAnswer ? 'Correct! 🎉' : 'Not quite right'}
-                                        </h3>
-                                        <p style={{ color: '#888', marginBottom: '24px', fontSize: '0.9rem' }}>
-                                            The correct answer is: <strong style={{ color: '#10b981' }}>{currentQuestion?.correctAnswer}</strong>
-                                        </p>
-                                        <button
-                                            onClick={() => { setShowQuestion(false); setAnswered(false); setProgress(65); }}
-                                            className="btn-primary"
-                                            style={{ padding: '12px 32px' }}
-                                        >
-                                            Continue Lesson <ChevronRight size={16} />
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Video Controls */}
-                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '16px 24px', background: 'linear-gradient(transparent, rgba(0,0,0,0.8))' }}>
-                            {/* Progress Bar */}
-                            <div style={{ width: '100%', height: '4px', background: '#333', borderRadius: '999px', marginBottom: '12px', cursor: 'pointer' }}>
-                                <div style={{ width: `${progress}%`, height: '100%', borderRadius: '999px', background: company?.branding.themeColor || '#4f46e5', transition: 'width 0.3s ease' }}></div>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                    <button onClick={() => setIsPlaying(!isPlaying)} style={{ color: 'white' }}>
-                                        {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-                                    </button>
-                                    <span style={{ fontSize: '0.8rem', color: '#999' }}>2:00 / 10:30</span>
-                                    <Volume2 size={18} color="#999" />
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                    <button
-                                        onClick={() => setPlaybackSpeed(playbackSpeed === 2 ? 1 : playbackSpeed + 0.25)}
-                                        style={{ color: '#999', fontSize: '0.8rem', fontWeight: 600, padding: '4px 8px', borderRadius: '4px', border: '1px solid #444' }}
+                                        width: '80px', height: '80px', borderRadius: '50%',
+                                        background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        margin: '0 auto 16px', cursor: 'pointer',
+                                        border: '2px solid rgba(255,255,255,0.2)',
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                        onClick={() => { setIsPlaying(!isPlaying); if (!showQuestion) setTimeout(() => setShowQuestion(true), 1500); }}
                                     >
-                                        {playbackSpeed}x
-                                    </button>
-                                    <Maximize size={18} color="#999" style={{ cursor: 'pointer' }} />
+                                        {isPlaying ? <Pause size={32} /> : <Play size={32} style={{ marginLeft: '4px' }} />}
+                                    </div>
+                                    <p style={{ color: '#888', fontSize: '0.9rem' }}>{currentLesson?.title || 'No lesson available'}</p>
                                 </div>
+                            </div>
+                        )}
+
+                        {/* Inline Question Overlay */}
+                        {showQuestion && currentQuestion && !answered && (
+                            <div style={{
+                                position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                backdropFilter: 'blur(8px)', padding: '20px'
+                            }}>
+                                <div style={{
+                                    background: '#1e1e2e', borderRadius: '16px', padding: '40px',
+                                    maxWidth: '520px', width: '100%', border: '1px solid #333'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#f59e0b', fontSize: '0.8rem', fontWeight: 500 }}>
+                                        <Clock size={14} /> Question at {Math.floor((currentQuestion.timestamp || 0) / 60)}:{String((currentQuestion.timestamp || 0) % 60).padStart(2, '0')}
+                                    </div>
+                                    <h3 style={{ marginBottom: '24px', fontSize: '1.2rem', lineHeight: 1.4 }}>{currentQuestion.text}</h3>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        {currentQuestion.options?.map((option, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => handleAnswer(option)}
+                                                style={{
+                                                    padding: '14px 18px', borderRadius: '10px', textAlign: 'left',
+                                                    background: '#2a2a3e', border: '1px solid #3a3a4e',
+                                                    color: 'white', fontSize: '0.95rem', cursor: 'pointer',
+                                                    transition: 'all 0.15s ease'
+                                                }}
+                                            >
+                                                <span style={{ color: '#888', marginRight: '12px', fontWeight: 600 }}>{String.fromCharCode(65 + idx)}</span>
+                                                {option}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <p style={{ marginTop: '16px', fontSize: '0.8rem', color: '#666' }}>Answer to continue the lesson</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Answer Feedback */}
+                        {answered && (
+                            <div style={{
+                                position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                backdropFilter: 'blur(8px)'
+                            }}>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{
+                                        width: '64px', height: '64px', borderRadius: '50%',
+                                        background: selectedAnswer === currentQuestion?.correctAnswer ? '#10b98133' : '#ef444433',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        margin: '0 auto 16px'
+                                    }}>
+                                        <CheckCircle size={32} color={selectedAnswer === currentQuestion?.correctAnswer ? '#10b981' : '#ef4444'} />
+                                    </div>
+                                    <h3 style={{ marginBottom: '8px' }}>
+                                        {selectedAnswer === currentQuestion?.correctAnswer ? 'Correct! 🎉' : 'Not quite right'}
+                                    </h3>
+                                    <p style={{ color: '#888', marginBottom: '24px', fontSize: '0.9rem' }}>
+                                        The correct answer is: <strong style={{ color: '#10b981' }}>{currentQuestion?.correctAnswer}</strong>
+                                    </p>
+                                    <button
+                                        onClick={() => { setShowQuestion(false); setAnswered(false); setProgress(65); }}
+                                        className="btn-primary"
+                                        style={{ padding: '12px 32px' }}
+                                    >
+                                        Continue Lesson <ChevronRight size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Video Controls */}
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '16px 24px', background: 'linear-gradient(transparent, rgba(0,0,0,0.8))' }}>
+                        {/* Progress Bar */}
+                        <div
+                            style={{ width: '100%', height: '4px', background: '#333', borderRadius: '999px', marginBottom: '12px', cursor: 'pointer' }}
+                            onClick={(e) => {
+                                if (videoRef.current && duration) {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const pos = (e.clientX - rect.left) / rect.width;
+                                    videoRef.current.currentTime = pos * duration;
+                                }
+                            }}
+                        >
+                            <div style={{ width: duration > 0 ? `${(currentTime / duration) * 100}%` : `${progress}%`, height: '100%', borderRadius: '999px', background: company?.branding.themeColor || '#4f46e5', transition: 'width 0.1s linear' }}></div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                <button onClick={() => setIsPlaying(!isPlaying)} style={{ color: 'white' }}>
+                                    {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                                </button>
+                                <span style={{ fontSize: '0.8rem', color: '#999' }}>
+                                    {duration > 0 ? `${Math.floor(currentTime / 60)}:${String(Math.floor(currentTime % 60)).padStart(2, '0')} / ${Math.floor(duration / 60)}:${String(Math.floor(duration % 60)).padStart(2, '0')}` : '2:00 / 10:30'}
+                                </span>
+                                <Volume2 size={18} color="#999" />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                <button
+                                    onClick={() => setPlaybackSpeed(playbackSpeed === 2 ? 1 : playbackSpeed + 0.25)}
+                                    style={{ color: '#999', fontSize: '0.8rem', fontWeight: 600, padding: '4px 8px', borderRadius: '4px', border: '1px solid #444' }}
+                                >
+                                    {playbackSpeed}x
+                                </button>
+                                <Maximize size={18} color="#999" style={{ cursor: 'pointer' }} />
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                {/* Sidebar - Course Content */}
-                <div style={{ width: '340px', borderLeft: '1px solid #222', overflow: 'auto', background: '#111' }}>
-                    <div style={{ padding: '20px' }}>
-                        <h3 style={{ fontSize: '1rem', marginBottom: '4px' }}>{course.title}</h3>
-                        <p style={{ color: '#666', fontSize: '0.8rem', marginBottom: '16px' }}>{course.modules.length} modules • {course.modules.reduce((a, m) => a + m.lessons.length, 0)} lessons</p>
+            {/* Sidebar - Course Content */}
+            <div style={{ width: '340px', borderLeft: '1px solid #222', overflow: 'auto', background: '#111' }}>
+                <div style={{ padding: '20px' }}>
+                    <h3 style={{ fontSize: '1rem', marginBottom: '4px' }}>{course.title}</h3>
+                    <p style={{ color: '#666', fontSize: '0.8rem', marginBottom: '16px' }}>{course.modules.length} modules • {course.modules.reduce((a, m) => a + m.lessons.length, 0)} lessons</p>
 
-                        {/* Progress */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                            <div style={{ flex: 1, height: '6px', borderRadius: '999px', background: '#222' }}>
-                                <div style={{ width: `${progress}%`, height: '100%', borderRadius: '999px', background: company?.branding.themeColor || '#4f46e5' }}></div>
-                            </div>
-                            <span style={{ fontSize: '0.8rem', color: '#888' }}>{progress}%</span>
+                    {/* Progress */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                        <div style={{ flex: 1, height: '6px', borderRadius: '999px', background: '#222' }}>
+                            <div style={{ width: `${progress}%`, height: '100%', borderRadius: '999px', background: company?.branding.themeColor || '#4f46e5' }}></div>
                         </div>
+                        <span style={{ fontSize: '0.8rem', color: '#888' }}>{progress}%</span>
                     </div>
+                </div>
 
-                    {/* Modules */}
-                    {course.modules.map((module, mi) => (
-                        <div key={module.id}>
-                            <div style={{ padding: '12px 20px', background: '#1a1a1a', fontSize: '0.85rem', fontWeight: 600, borderTop: '1px solid #222', borderBottom: '1px solid #222' }}>
-                                Module {mi + 1}: {module.title}
-                            </div>
-                            {module.lessons.map((lesson, li) => (
-                                <div key={lesson.id} style={{
-                                    padding: '14px 20px', display: 'flex', alignItems: 'center', gap: '12px',
-                                    borderBottom: '1px solid #1a1a1a', cursor: 'pointer',
-                                    background: li === 0 ? '#1e1e2e' : 'transparent',
-                                }}>
-                                    {li === 0 ? (
-                                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: company?.branding.themeColor || '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <Play size={12} />
-                                        </div>
-                                    ) : (
-                                        <Lock size={16} color="#444" />
-                                    )}
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontSize: '0.85rem', color: li === 0 ? 'white' : '#666' }}>{lesson.title}</div>
-                                        <div style={{ fontSize: '0.7rem', color: '#555', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-                                            {lesson.type === 'VIDEO' && <><Play size={10} /> Video</>}
-                                            {lesson.questions.length > 0 && <span>• {lesson.questions.length} quiz</span>}
-                                        </div>
+                {/* Modules */}
+                {course.modules.map((module, mi) => (
+                    <div key={module.id}>
+                        <div style={{ padding: '12px 20px', background: '#1a1a1a', fontSize: '0.85rem', fontWeight: 600, borderTop: '1px solid #222', borderBottom: '1px solid #222' }}>
+                            Module {mi + 1}: {module.title}
+                        </div>
+                        {module.lessons.map((lesson, li) => (
+                            <div key={lesson.id} style={{
+                                padding: '14px 20px', display: 'flex', alignItems: 'center', gap: '12px',
+                                borderBottom: '1px solid #1a1a1a', cursor: 'pointer',
+                                background: activeLessonId === lesson.id ? '#1e1e2e' : 'transparent',
+                            }}
+                                onClick={() => setActiveLessonId(lesson.id)}
+                            >
+                                {activeLessonId === lesson.id ? (
+                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: company?.branding.themeColor || '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <Play size={12} />
                                     </div>
-                                    {li === 0 && <CheckCircle size={16} color="#10b981" />}
+                                ) : li === 0 ? (
+                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <Play size={12} color="#888" />
+                                    </div>
+                                ) : (
+                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <Lock size={12} color="#888" />
+                                    </div>
+                                )}
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '0.85rem', color: activeLessonId === lesson.id ? 'white' : '#666' }}>{lesson.title}</div>
+                                    <div style={{ fontSize: '0.7rem', color: '#555', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                                        {lesson.type === 'VIDEO' && <><Play size={10} /> Video</>}
+                                        {lesson.questions.length > 0 && <span>• {lesson.questions.length} quiz</span>}
+                                    </div>
                                 </div>
-                            ))}
-                        </div>
-                    ))}
+                                {li === 0 && <CheckCircle size={16} color="#10b981" />}
+                            </div>
+                        ))}
+                    </div>
+                ))}
 
 
 
-                    {/* Certificate */}
-                    <div style={{ padding: '20px', borderTop: '1px solid #222' }}>
-                        <div style={{ padding: '20px', borderRadius: '12px', background: 'linear-gradient(135deg, #1e1e2e, #2a1e3e)', border: '1px solid #333', textAlign: 'center' }}>
-                            <Award size={32} color="#f59e0b" style={{ marginBottom: '8px' }} />
-                            <div style={{ fontSize: '0.85rem', fontWeight: 500, marginBottom: '4px' }}>Certificate Available</div>
-                            <div style={{ fontSize: '0.75rem', color: '#666' }}>Complete all modules to earn your certificate</div>
-                        </div>
+                {/* Certificate */}
+                <div style={{ padding: '20px', borderTop: '1px solid #222' }}>
+                    <div style={{ padding: '20px', borderRadius: '12px', background: 'linear-gradient(135deg, #1e1e2e, #2a1e3e)', border: '1px solid #333', textAlign: 'center' }}>
+                        <Award size={32} color="#f59e0b" style={{ marginBottom: '8px' }} />
+                        <div style={{ fontSize: '0.85rem', fontWeight: 500, marginBottom: '4px' }}>Certificate Available</div>
+                        <div style={{ fontSize: '0.75rem', color: '#666' }}>Complete all modules to earn your certificate</div>
                     </div>
                 </div>
             </div>

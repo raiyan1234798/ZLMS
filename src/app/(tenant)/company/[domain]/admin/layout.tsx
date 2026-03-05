@@ -85,8 +85,8 @@ export default function CompanyAdminLayout({ children }: { children: React.React
             <div className="dashboard-main">
                 <div style={{ padding: '16px 32px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 30 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <button onClick={() => setSidebarOpen(true)} className="mobile-menu" style={{ display: 'none' }}>
-                            <Menu size={24} />
+                        <button onClick={() => setSidebarOpen(true)} className="mobile-menu" aria-label="Open sidebar">
+                            <Menu size={22} />
                         </button>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                             Admin <ChevronRight size={12} /> Overview
@@ -106,6 +106,6 @@ export default function CompanyAdminLayout({ children }: { children: React.React
                     {children}
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

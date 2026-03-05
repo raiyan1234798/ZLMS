@@ -18,7 +18,7 @@ export default function MaterialsPage() {
                 type: lesson.type,
                 course: course.title,
                 module: module.title,
-                size: lesson.type === 'VIDEO' ? `${(15 + Math.floor(Math.random() * 85))} MB` : `${(1 + Math.floor(Math.random() * 5))} MB`,
+                size: lesson.type === 'VIDEO' ? `${15 + ((lesson.title.length * 3) % 80)} MB` : `${1 + ((lesson.title.length) % 5)} MB`,
                 uploaded: 'Feb 2026',
             }))
         )

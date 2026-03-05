@@ -66,6 +66,7 @@ export default function MyCoursesPage() {
             const makeId = `${user.uid}_${courseId}`;
             await setDoc(doc(db, 'companies', company!.id, 'requests', makeId), {
                 userId: user.uid,
+                userName: user.displayName || user.email || 'A Learner',
                 courseId,
                 courseTitle,
                 status: 'PENDING',
@@ -94,7 +95,7 @@ export default function MyCoursesPage() {
                 {initialCourses.map((course) => {
                     const totalLessons = course.modules.reduce((a, m) => a + m.lessons.length, 0);
                     // Use a visual progress if assigned, otherwise 0
-                    const progress = assignedCourses[course.id] ? Math.floor(Math.random() * 60) + 10 : 0;
+                    const progress = assignedCourses[course.id] ? 15 + ((totalLessons * 7 + 3) % 50) : 0;
                     const totalDuration = totalLessons * 15; // estimated 15 min per lesson
 
                     const isRequested = requestedCourses[course.id];

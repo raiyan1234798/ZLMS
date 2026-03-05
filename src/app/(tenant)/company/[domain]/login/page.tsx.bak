@@ -1,3 +1,4 @@
+export function generateStaticParams() { return [{ domain: "globalit" }, { domain: "acme" }, { domain: "travelpro" }, { domain: "medlearn" }, { domain: "skyline" }]; }
 
 "use client";
 import { useState } from 'react';

@@ -1,5 +1,7 @@
 import { MOCK_COMPANIES } from '@/data/mockDb';
 
+export const runtime = 'edge';
+
 function getMockCompany(domain: string) {
     return MOCK_COMPANIES.find(c => c.subdomain === domain) || null;
 }

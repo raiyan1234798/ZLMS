@@ -84,11 +84,16 @@ export default function TenantLoginPage() {
     };
 
     return (
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '40%', height: '40%', background: themeColor, opacity: 0.15, filter: 'blur(100px)', borderRadius: '50%' }} />
-            <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '40%', height: '40%', background: themeColor, opacity: 0.15, filter: 'blur(100px)', borderRadius: '50%' }} />
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', position: 'relative', overflow: 'hidden', background: 'var(--background)' }}>
 
-            <div className="glass-panel animate-fade-in-up" style={{ width: '100%', maxWidth: '440px', padding: '40px', position: 'relative', zIndex: 10 }}>
+            {/* Movable CSS Animated Background for Tenant */}
+            <div className="tenant-bg-animation" style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+                <div style={{ position: 'absolute', width: '800px', height: '800px', background: `radial-gradient(circle, ${themeColor}25 0%, transparent 60%)`, top: '-20%', left: '-10%', borderRadius: '50%', animation: 'floatTenant 18s infinite alternate ease-in-out' }} />
+                <div style={{ position: 'absolute', width: '600px', height: '600px', background: `radial-gradient(circle, ${themeColor}15 0%, transparent 60%)`, bottom: '-10%', right: '-10%', borderRadius: '50%', animation: 'floatTenant 12s infinite alternate-reverse ease-in-out' }} />
+                <div style={{ position: 'absolute', width: '900px', height: '900px', background: `radial-gradient(circle, ${themeColor}10 0%, transparent 50%)`, top: '30%', left: '40%', transform: 'translate(-50%, -50%)', borderRadius: '50%', animation: 'floatTenantSlow 25s infinite alternate ease-in-out' }} />
+            </div>
+
+            <div className="glass-panel animate-fade-in-up" style={{ width: '100%', maxWidth: '440px', padding: '40px', position: 'relative', zIndex: 10, backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.6)', boxShadow: `0 20px 40px -10px ${themeColor}30` }}>
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
                     <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: `linear-gradient(135deg, ${themeColor}, ${themeColor}dd)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: `0 8px 24px ${themeColor}40` }}>
                         <Building2 size={32} />
@@ -199,6 +204,14 @@ export default function TenantLoginPage() {
                 __html: `
                 @keyframes spin {
                     to { transform: rotate(360deg); }
+                }
+                @keyframes floatTenant {
+                    0% { transform: translate(0, 0) scale(1); }
+                    100% { transform: translate(80px, 40px) scale(1.1); }
+                }
+                @keyframes floatTenantSlow {
+                    0% { transform: translate(-50%, -50%) scale(1); }
+                    100% { transform: translate(-45%, -55%) scale(1.15); }
                 }
             `}} />
         </div>

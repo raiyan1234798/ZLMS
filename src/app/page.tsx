@@ -14,9 +14,13 @@ export default function RootPage() {
         <nav style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
           <a href="#features" style={{ fontWeight: 500 }}>Features</a>
           <a href="#pricing" style={{ fontWeight: 500 }}>Pricing</a>
-          {!loading && isSuperAdmin && (
-            <Link href="/admin" className="btn-primary" style={{ padding: '8px 20px', fontSize: '14px' }}>Dashboard</Link>
-          )}
+          {!loading ? (
+            isSuperAdmin ? (
+              <Link href="/admin" className="btn-primary" style={{ padding: '8px 20px', fontSize: '14px' }}>Dashboard</Link>
+            ) : (
+              <Link href="/admin/login" className="btn-secondary" style={{ padding: '8px 20px', fontSize: '14px' }}>Platform Login</Link>
+            )
+          ) : null}
         </nav>
       </header>
 

@@ -1,16 +1,18 @@
 "use client";
 
-import { KanbanBoard } from '@/components/ui/KanbanBoard';
+import { KanbanBoard, ColumnData } from '@/components/ui/KanbanBoard';
 import { MOCK_COMPANIES, MOCK_COURSES } from '@/data/mockDb';
 import Link from 'next/link';
 import { Building2, Users, BookOpen, DollarSign, ArrowUpRight, Activity, GraduationCap } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { ALL_FEATURES, DEFAULT_FEATURE_COLUMNS } from '@/lib/features';
 
 export default function SuperAdminOverview() {
     const [platformUsers, setPlatformUsers] = useState<any[]>([]);
     const [firebaseCompanies, setFirebaseCompanies] = useState<any[]>([]);
+    const [kanbanColumns, setKanbanColumns] = useState<Record<string, ColumnData>>(DEFAULT_FEATURE_COLUMNS);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -31,6 +33,16 @@ export default function SuperAdminOverview() {
                     fbCompanies.push({ id: doc.id, ...doc.data() });
                 });
                 setFirebaseCompanies(fbCompanies);
+
+                // Fetch platform feature configs
+                const featuresDoc = await getDoc(doc(db, 'settings', 'features'));
+                if (featuresDoc.exists()) {
+                    setKanbanColumns(featuresDoc.data().columns);
+                } else {
+                    // Initialize if missing
+                    await setDoc(doc(db, 'settings', 'features'), { columns: DEFAULT_FEATURE_COLUMNS });
+                }
+
             } catch (error) {
                 console.error("Error fetching data:", error);
             } finally {
@@ -179,27 +191,36 @@ export default function SuperAdminOverview() {
                     <h3 style={{ fontSize: '1rem', marginBottom: '4px' }}>Platform Feature Management</h3>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Drag features between columns to enable or disable them globally.</p>
                 </div>
-                <KanbanBoard
-                    initialColumns={{
-                        available: { id: 'available', title: '🟡 Available Features', itemIds: ['f7', 'f8', 'f9', 'f10'] },
-                        enabled: { id: 'enabled', title: '🟢 Enabled Features', itemIds: ['f1', 'f2', 'f3', 'f4', 'f5', 'f6'] },
-                        disabled: { id: 'disabled', title: '🔴 Disabled Features', itemIds: ['f11', 'f12'] },
-                    }}
-                    items={{
-                        f1: { id: 'f1', content: 'Courses' },
-                        f2: { id: 'f2', content: 'Video Learning' },
-                        f3: { id: 'f3', content: 'Inline Quizzes' },
-                        f4: { id: 'f4', content: 'Certificates' },
-                        f5: { id: 'f5', content: 'Analytics' },
-                        f6: { id: 'f6', content: 'Notifications' },
-                        f7: { id: 'f7', content: 'AI Course Builder' },
-                        f8: { id: 'f8', content: 'Leaderboards' },
-                        f9: { id: 'f9', content: 'Surveys' },
-                        f10: { id: 'f10', content: 'Gamification' },
-                        f11: { id: 'f11', content: 'Discussion Forums' },
-                        f12: { id: 'f12', content: 'SSO Integration' },
-                    }}
-                />
+                {!loading && (
+                    <KanbanBoard
+                        initialColumns={kanbanColumns}
+                        items={Object.keys(ALL_FEATURES).reduce((acc, key) => {
+                            acc[key] = { id: key, content: ALL_FEATURES[key] };
+                            return acc;
+                        }, {} as Record<string, { id: string; content: string }>)}
+                        onDragEndAction={async (result) => {
+                            if (!result.destination) return;
+
+                            // Replicate the drag logic locally to save to firebase
+                            const { source, destination, draggableId } = result;
+                            const newColumns = JSON.parse(JSON.stringify(kanbanColumns)); // deep copy
+
+                            if (source.droppableId === destination.droppableId) {
+                                const column = newColumns[source.droppableId];
+                                column.itemIds.splice(source.index, 1);
+                                column.itemIds.splice(destination.index, 0, draggableId);
+                            } else {
+                                const startCol = newColumns[source.droppableId];
+                                const finishCol = newColumns[destination.droppableId];
+                                startCol.itemIds.splice(source.index, 1);
+                                finishCol.itemIds.splice(destination.index, 0, draggableId);
+                            }
+
+                            setKanbanColumns(newColumns);
+                            await setDoc(doc(db, 'settings', 'features'), { columns: newColumns }, { merge: true });
+                        }}
+                    />
+                )}
             </div>
         </div>
     );

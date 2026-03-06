@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { MOCK_COMPANIES } from '@/data/mockDb';
 import {
     LayoutDashboard, Users, BookOpen, BarChart3, Settings,
     Award, Bell, Menu, X, ChevronRight, LogOut, Kanban,
@@ -13,20 +16,45 @@ export default function CompanyAdminLayout({ children }: { children: React.React
     const params = useParams();
     const domain = params.domain as string;
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [companyFeatures, setCompanyFeatures] = useState<string[] | null>(null);
+    const pathname = usePathname();
 
-    const navItems = [
-        { icon: LayoutDashboard, label: 'Overview', href: `/company/${domain}/admin` },
-        { icon: Users, label: 'Users', href: `/company/${domain}/admin/users` },
-        { icon: BookOpen, label: 'Courses', href: `/company/${domain}/admin/courses` },
-        { icon: Kanban, label: 'Course Board', href: `/company/${domain}/admin/courses` },
-        { icon: UserPlus, label: 'Invite Users', href: `/company/${domain}/admin/invite` },
-        { icon: Award, label: 'Certificates', href: `/company/${domain}/admin/certificates` },
-        { icon: BarChart3, label: 'Analytics', href: `/company/${domain}/admin/analytics` },
-        { icon: Upload, label: 'Materials', href: `/company/${domain}/admin/materials` },
-        { icon: Palette, label: 'Branding', href: `/company/${domain}/admin/branding` },
-        { icon: Bell, label: 'Notifications', href: `/company/${domain}/admin/notifications` },
-        { icon: Settings, label: 'Settings', href: `/company/${domain}/admin/settings` },
+    useEffect(() => {
+        const fetchFeatures = async () => {
+            try {
+                const q = query(collection(db, 'companies'), where('subdomain', '==', domain));
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    setCompanyFeatures(snap.docs[0].data().features || []);
+                } else {
+                    const mock = MOCK_COMPANIES.find(c => c.subdomain === domain);
+                    setCompanyFeatures(mock?.features || []);
+                }
+            } catch (err) {
+                console.error(err);
+                setCompanyFeatures([]);
+            }
+        };
+        fetchFeatures();
+    }, [domain]);
+
+    const allNavItems = [
+        { icon: LayoutDashboard, label: 'Overview', href: `/company/${domain}/admin`, featureReq: null },
+        { icon: Users, label: 'Users', href: `/company/${domain}/admin/users`, featureReq: null },
+        { icon: BookOpen, label: 'Courses', href: `/company/${domain}/admin/courses`, featureReq: 'courses' },
+        { icon: Kanban, label: 'Course Board', href: `/company/${domain}/admin/courses`, featureReq: 'courses' },
+        { icon: UserPlus, label: 'Invite Users', href: `/company/${domain}/admin/invite`, featureReq: null },
+        { icon: Award, label: 'Certificates', href: `/company/${domain}/admin/certificates`, featureReq: 'certificates' },
+        { icon: BarChart3, label: 'Analytics', href: `/company/${domain}/admin/analytics`, featureReq: 'analytics' },
+        { icon: Upload, label: 'Materials', href: `/company/${domain}/admin/materials`, featureReq: null },
+        { icon: Palette, label: 'Branding', href: `/company/${domain}/admin/branding`, featureReq: null },
+        { icon: Bell, label: 'Notifications', href: `/company/${domain}/admin/notifications`, featureReq: 'notifications' },
+        { icon: Settings, label: 'Settings', href: `/company/${domain}/admin/settings`, featureReq: null },
     ];
+
+    const navItems = allNavItems.filter(item =>
+        !item.featureReq || (companyFeatures && companyFeatures.includes(item.featureReq))
+    );
 
     return (
         <div className="dashboard-layout">
@@ -48,7 +76,7 @@ export default function CompanyAdminLayout({ children }: { children: React.React
                 <nav style={{ flex: 1, padding: '12px', overflow: 'auto' }}>
                     {navItems.map((item, index) => {
                         const Icon = item.icon;
-                        const isActive = index === 0;
+                        const isActive = pathname === item.href || (item.href.endsWith('/admin') && pathname === item.href);
                         return (
                             <Link
                                 key={item.label + index}

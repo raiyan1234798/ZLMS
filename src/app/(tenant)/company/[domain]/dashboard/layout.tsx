@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { MOCK_COMPANIES } from '@/data/mockDb';
 import {
     LayoutDashboard, BookOpen, BarChart3, Award, Bell,
     Menu, X, ChevronRight, User, LogOut
@@ -12,14 +15,39 @@ export default function TenantDashboardLayout({ children }: { children: React.Re
     const params = useParams();
     const domain = params.domain as string;
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [companyFeatures, setCompanyFeatures] = useState<string[] | null>(null);
+    const pathname = usePathname();
 
-    const navItems = [
-        { icon: LayoutDashboard, label: 'Dashboard', href: `/company/${domain}/dashboard` },
-        { icon: BookOpen, label: 'My Courses', href: `/company/${domain}/dashboard/courses` },
-        { icon: Award, label: 'Certificates', href: `/company/${domain}/dashboard/certificates` },
-        { icon: BarChart3, label: 'Progress', href: `/company/${domain}/dashboard/progress` },
-        { icon: Bell, label: 'Notifications', href: `/company/${domain}/dashboard/notifications` },
+    useEffect(() => {
+        const fetchFeatures = async () => {
+            try {
+                const q = query(collection(db, 'companies'), where('subdomain', '==', domain));
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    setCompanyFeatures(snap.docs[0].data().features || []);
+                } else {
+                    const mock = MOCK_COMPANIES.find(c => c.subdomain === domain);
+                    setCompanyFeatures(mock?.features || []);
+                }
+            } catch (err) {
+                console.error(err);
+                setCompanyFeatures([]);
+            }
+        };
+        fetchFeatures();
+    }, [domain]);
+
+    const allNavItems = [
+        { icon: LayoutDashboard, label: 'Dashboard', href: `/company/${domain}/dashboard`, featureReq: null },
+        { icon: BookOpen, label: 'My Courses', href: `/company/${domain}/dashboard/courses`, featureReq: 'courses' },
+        { icon: Award, label: 'Certificates', href: `/company/${domain}/dashboard/certificates`, featureReq: 'certificates' },
+        { icon: BarChart3, label: 'Progress', href: `/company/${domain}/dashboard/progress`, featureReq: 'analytics' },
+        { icon: Bell, label: 'Notifications', href: `/company/${domain}/dashboard/notifications`, featureReq: 'notifications' },
     ];
+
+    const navItems = allNavItems.filter(item =>
+        !item.featureReq || (companyFeatures && companyFeatures.includes(item.featureReq))
+    );
 
     return (
         <div className="dashboard-layout">
@@ -39,9 +67,9 @@ export default function TenantDashboardLayout({ children }: { children: React.Re
                 </div>
 
                 <nav style={{ flex: 1, padding: '12px', overflow: 'auto' }}>
-                    {navItems.map((item, index) => {
+                    {navItems.map((item) => {
                         const Icon = item.icon;
-                        const isActive = index === 0;
+                        const isActive = pathname === item.href;
                         return (
                             <Link
                                 key={item.label}

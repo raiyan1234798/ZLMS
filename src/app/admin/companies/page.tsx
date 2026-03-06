@@ -7,13 +7,9 @@ import {
     X, Building2, Palette, Globe, Zap, Trash2, Edit3, MoreVertical, Sparkles
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-
-const AVAILABLE_FEATURES = [
-    'courses', 'video', 'quizzes', 'certificates', 'analytics',
-    'notifications', 'teams', 'assignments', 'ai_builder', 'gamification'
-];
+import { ALL_FEATURES } from '@/lib/features';
 
 const THEME_PRESETS = [
     '#3b82f6', '#ef4444', '#10b981', '#8b5cf6', '#06b6d4',
@@ -37,6 +33,7 @@ export default function CompaniesPage() {
     const [firebaseCompanies, setFirebaseCompanies] = useState<FirebaseCompany[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [allowedFeatures, setAllowedFeatures] = useState<string[]>(Object.keys(ALL_FEATURES));
 
     // Add Company Modal
     const [showAddModal, setShowAddModal] = useState(false);
@@ -81,6 +78,13 @@ export default function CompaniesPage() {
             const fbCompanies: FirebaseCompany[] = [];
             companiesSnap.forEach(doc => fbCompanies.push({ id: doc.id, ...doc.data() } as FirebaseCompany));
             setFirebaseCompanies(fbCompanies);
+
+            const featuresDoc = await getDoc(doc(db, 'settings', 'features'));
+            if (featuresDoc.exists()) {
+                const cols = featuresDoc.data().columns;
+                // Only features in 'available' or 'enabled' columns are allowed to be assigned to specific companies
+                setAllowedFeatures([...cols.available.itemIds, ...cols.enabled.itemIds]);
+            }
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
@@ -374,7 +378,7 @@ export default function CompaniesPage() {
                                         <span key={i} style={{
                                             padding: '2px 8px', borderRadius: '6px', background: 'var(--background)',
                                             fontSize: '0.7rem', color: 'var(--text-muted)', border: '1px solid var(--border)'
-                                        }}>{f}</span>
+                                        }}>{ALL_FEATURES[f] || f}</span>
                                     ))}
                                     {company.features.length > 4 && (
                                         <span style={{
@@ -502,7 +506,7 @@ export default function CompaniesPage() {
                                     <Zap size={14} style={{ display: 'inline', verticalAlign: '-2px', marginRight: '6px' }} />Platform Features
                                 </label>
                                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                    {AVAILABLE_FEATURES.map(f => {
+                                    {allowedFeatures.map(f => {
                                         const selected = selectedFeatures.includes(f);
                                         return (
                                             <button key={f} onClick={() => toggleFeature(f, selectedFeatures, setSelectedFeatures)} style={{
@@ -513,7 +517,7 @@ export default function CompaniesPage() {
                                                 cursor: 'pointer', transition: 'all 0.15s ease'
                                             }}>
                                                 {selected && <span style={{ marginRight: '4px' }}>✓</span>}
-                                                {f}
+                                                {ALL_FEATURES[f] || f}
                                             </button>
                                         );
                                     })}
@@ -601,7 +605,7 @@ export default function CompaniesPage() {
                                     <div>
                                         <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px' }}>Features</label>
                                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                                            {AVAILABLE_FEATURES.map(f => {
+                                            {allowedFeatures.map(f => {
                                                 const selected = editFeatures.includes(f);
                                                 return (
                                                     <button key={f} onClick={() => toggleFeature(f, editFeatures, setEditFeatures)} style={{
@@ -611,7 +615,7 @@ export default function CompaniesPage() {
                                                         border: `1.5px solid ${selected ? editThemeColor : 'var(--border)'}`,
                                                         cursor: 'pointer'
                                                     }}>
-                                                        {selected && '✓ '}{f}
+                                                        {selected && '✓ '}{ALL_FEATURES[f] || f}
                                                     </button>
                                                 );
                                             })}

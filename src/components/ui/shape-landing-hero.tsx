@@ -4,6 +4,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { Circle } from "lucide-react";
 import { ReactNode, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { DashboardMockup, CoursePlayerMockup } from "./mockups";
 
 function ElegantShape({
     className,
@@ -163,16 +164,17 @@ function HeroGeometric({
                 />
             </div>
 
-            {/* Parallax Floating Mockups */}
+            {/* Parallax Floating Mockups using React Components */}
             <motion.div
                 style={{ y: y1, opacity: opacity1 }}
                 initial={{ opacity: 0, x: -50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 1, delay: 0.8 }}
-                className="absolute hidden xl:block left-[2%] top-[15%] w-[420px] rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(79,70,229,0.15)] z-0 group"
+                className="absolute hidden xl:block left-[2%] top-[15%] w-[420px] z-[5] group"
             >
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10" />
-                <img src="/dashboard-mockup.png" alt="Dashboard Analytics Mockup" className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700" />
+                <div className="transform rotate-[-4deg] group-hover:rotate-0 transition-transform duration-700">
+                    <DashboardMockup />
+                </div>
             </motion.div>
 
             <motion.div
@@ -180,10 +182,11 @@ function HeroGeometric({
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 1, delay: 1 }}
-                className="absolute hidden xl:block right-[2%] top-[35%] w-[480px] rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(225,29,72,0.15)] z-0 group"
+                className="absolute hidden xl:block right-[2%] top-[25%] w-[460px] z-[5] group"
             >
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10" />
-                <img src="/course-player-mockup.png" alt="Course Player Mockup" className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700" />
+                <div className="transform rotate-[4deg] group-hover:rotate-0 transition-transform duration-700">
+                    <CoursePlayerMockup />
+                </div>
             </motion.div>
 
             <motion.div

@@ -1,7 +1,9 @@
 import { MOCK_COMPANIES } from '@/data/mockDb';
 
 export function generateStaticParams() {
-    return MOCK_COMPANIES.map(c => ({ domain: c.subdomain }));
+    return MOCK_COMPANIES.map((company) => ({
+        domain: company.subdomain,
+    }));
 }
 function getMockCompany(domain: string) {
     return MOCK_COMPANIES.find(c => c.subdomain === domain) || null;

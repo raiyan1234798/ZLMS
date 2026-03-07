@@ -5,6 +5,11 @@ import { Providers } from './Providers';
 export const metadata: Metadata = {
     title: 'Z LMS',
     description: 'Multi-tenant SaaS Learning Management System',
+    icons: {
+        icon: '/icon.png',
+        shortcut: '/favicon.ico',
+        apple: '/icon.png',
+    },
 };
 
 export default function RootLayout({

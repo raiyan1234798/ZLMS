@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-type Role = 'COMPANY_ADMIN' | 'TRAINER' | 'USER';
+type Role = 'SUPER_ADMIN' | 'COMPANY_ADMIN' | 'TRAINER' | 'USER';
 
 interface PlatformUser {
     id: string;
@@ -14,6 +14,7 @@ interface PlatformUser {
     email: string;
     role: Role;
     companyId: string;
+    status?: string;
     createdAt?: string;
 }
 
@@ -50,9 +51,7 @@ export default function AllUsersPage() {
             const users: PlatformUser[] = [];
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
-                if (data.role !== 'SUPER_ADMIN' && data.companyId !== 'platform') {
-                    users.push({ id: doc.id, ...data } as PlatformUser);
-                }
+                users.push({ id: doc.id, ...data } as PlatformUser);
             });
             setPlatformUsers(users);
         } catch (error) {
@@ -111,7 +110,7 @@ export default function AllUsersPage() {
     };
 
     const handleAddUser = async () => {
-        if (!newName || !newEmail || !newCompany) {
+        if (!newName || !newEmail || (!newCompany && newRole !== 'SUPER_ADMIN')) {
             setAddError('All fields are required.');
             return;
         }
@@ -123,7 +122,8 @@ export default function AllUsersPage() {
                 name: newName,
                 email: newEmail,
                 role: newRole,
-                companyId: newCompany,
+                companyId: newRole === 'SUPER_ADMIN' ? 'platform' : newCompany,
+                status: 'ACTIVE',
                 createdAt: new Date().toISOString(),
             };
             await setDoc(doc(db, 'users', newId), userData);
@@ -150,6 +150,7 @@ export default function AllUsersPage() {
 
     const roleColor = (role: string) => {
         switch (role) {
+            case 'SUPER_ADMIN': return { bg: '#f3e8ff', color: '#9333ea' };
             case 'COMPANY_ADMIN': return { bg: '#eef2ff', color: '#4f46e5' };
             case 'TRAINER': return { bg: '#fef3c7', color: '#d97706' };
             default: return { bg: '#ecfdf5', color: '#10b981' };
@@ -158,6 +159,7 @@ export default function AllUsersPage() {
 
     const roleLabel = (role: string) => {
         switch (role) {
+            case 'SUPER_ADMIN': return 'Super Admin';
             case 'COMPANY_ADMIN': return 'Admin';
             case 'TRAINER': return 'Trainer';
             default: return 'Learner';
@@ -205,15 +207,15 @@ export default function AllUsersPage() {
                     <Search size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
                     <input type="text" placeholder="Search users..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ width: '100%', padding: '10px 14px 10px 42px', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '0.9rem', outline: 'none', fontFamily: 'inherit' }} />
                 </div>
-                {['ALL', 'COMPANY_ADMIN', 'TRAINER', 'USER'].map(r => (
+                {['ALL', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'TRAINER', 'USER'].map(r => (
                     <button key={r} onClick={() => setFilter(r)} className={filter === r ? 'btn-primary' : 'btn-secondary'} style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-                        {r === 'ALL' ? 'All' : r === 'COMPANY_ADMIN' ? 'Admins' : r === 'TRAINER' ? 'Trainers' : 'Learners'}
+                        {r === 'ALL' ? 'All' : r === 'SUPER_ADMIN' ? 'Super Admins' : r === 'COMPANY_ADMIN' ? 'Admins' : r === 'TRAINER' ? 'Trainers' : 'Learners'}
                     </button>
                 ))}
             </div>
 
             {/* Users Table */}
-            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div className="card" style={{ padding: 0, overflow: 'visible', paddingBottom: '8px' }}>
                 {loading ? (
                     <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading users...</div>
                 ) : filtered.length === 0 ? (
@@ -260,7 +262,9 @@ export default function AllUsersPage() {
                                             </span>
                                         </td>
                                         <td style={{ padding: '14px 24px' }}>
-                                            <span style={{ padding: '3px 10px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 500, background: '#ecfdf5', color: '#10b981' }}>Active</span>
+                                            <span style={{ padding: '3px 10px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 500, background: user.status === 'PRE_APPROVED' ? '#f1f5f9' : '#ecfdf5', color: user.status === 'PRE_APPROVED' ? '#64748b' : '#10b981' }}>
+                                                {user.status === 'PRE_APPROVED' ? 'Pre-Approved' : 'Active'}
+                                            </span>
                                         </td>
                                         <td style={{ padding: '14px 24px', textAlign: 'right', position: 'relative' }}>
                                             <div ref={openMenuId === user.id ? menuRef : null} style={{ position: 'relative', display: 'inline-block' }}>
@@ -330,13 +334,13 @@ export default function AllUsersPage() {
 
                         <div style={{ marginBottom: '24px' }}>
                             <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '8px', color: 'var(--text-muted)' }}>Role</label>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                {(['COMPANY_ADMIN', 'TRAINER', 'USER'] as Role[]).map(r => {
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                {(['SUPER_ADMIN', 'COMPANY_ADMIN', 'TRAINER', 'USER'] as Role[]).map(r => {
                                     const rc = roleColor(r);
                                     const selected = editRole === r;
                                     return (
                                         <button key={r} onClick={() => setEditRole(r)} style={{
-                                            flex: 1, padding: '12px', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 600,
+                                            flex: '1 1 calc(50% - 4px)', padding: '12px', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 600,
                                             background: selected ? rc.color : 'var(--background)',
                                             color: selected ? 'white' : rc.color,
                                             border: `2px solid ${selected ? rc.color : 'var(--border)'}`,
@@ -408,24 +412,26 @@ export default function AllUsersPage() {
                                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '6px', color: 'var(--text-muted)' }}>Email Address</label>
                                 <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} className="input-modern" placeholder="john@company.com" />
                             </div>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '6px', color: 'var(--text-muted)' }}>Company</label>
-                                <select value={newCompany} onChange={e => setNewCompany(e.target.value)} className="input-modern" style={{ cursor: 'pointer', appearance: 'none' }}>
-                                    <option value="">Select a company...</option>
-                                    {MOCK_COMPANIES.filter(c => c.status === 'ACTIVE').map(c => (
-                                        <option key={c.id} value={c.id}>{c.name}</option>
-                                    ))}
-                                </select>
-                            </div>
+                            {newRole !== 'SUPER_ADMIN' && (
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '6px', color: 'var(--text-muted)' }}>Company</label>
+                                    <select value={newCompany} onChange={e => setNewCompany(e.target.value)} className="input-modern" style={{ cursor: 'pointer', appearance: 'none' }}>
+                                        <option value="">Select a company...</option>
+                                        {MOCK_COMPANIES.filter(c => c.status === 'ACTIVE').map(c => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                             <div>
                                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '6px', color: 'var(--text-muted)' }}>Role</label>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    {(['COMPANY_ADMIN', 'TRAINER', 'USER'] as Role[]).map(r => {
+                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                    {(['SUPER_ADMIN', 'COMPANY_ADMIN', 'TRAINER', 'USER'] as Role[]).map(r => {
                                         const rc = roleColor(r);
                                         const selected = newRole === r;
                                         return (
                                             <button key={r} onClick={() => setNewRole(r)} style={{
-                                                flex: 1, padding: '10px', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 600,
+                                                flex: '1 1 calc(50% - 4px)', padding: '10px', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 600,
                                                 background: selected ? rc.color : 'var(--background)',
                                                 color: selected ? 'white' : rc.color,
                                                 border: `2px solid ${selected ? rc.color : 'var(--border)'}`,

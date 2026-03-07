@@ -425,6 +425,23 @@ button {
   div[style*="gridTemplateColumns: 1fr 1fr"] {
     grid-template-columns: 1fr !important;
   }
+
+  /* Course Studio: stack grid on mobile */
+  div[style*="gridTemplateColumns: 1fr 320px"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Filter buttons: wrap */
+  div[style*="gap: '12px'"],
+  div[style*="gap: '6px'"] {
+    flex-wrap: wrap !important;
+  }
+
+  /* User rows on mobile - stack name and badges */
+  div[style*="justifyContent: 'space-between'"] {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 }
 
 /* Small mobile (480px) */
@@ -460,5 +477,10 @@ button {
   /* Landing page hero */
   div[style*="padding: '100px 20px'"] {
     padding: 40px 16px !important;
+  }
+
+  /* Course Studio: video source tabs stack */
+  div[style*="gap: '6px'"] {
+    flex-wrap: wrap !important;
   }
 }

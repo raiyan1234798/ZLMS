@@ -8,7 +8,7 @@ import { db } from '@/lib/firebase';
 import { MOCK_COMPANIES } from '@/data/mockDb';
 import {
     LayoutDashboard, BookOpen, BarChart3, Award, Bell,
-    Menu, X, ChevronRight, User, LogOut
+    Menu, X, ChevronRight, User, LogOut, MessageSquare
 } from 'lucide-react';
 
 export default function TenantDashboardLayout({ children }: { children: React.ReactNode }) {
@@ -42,6 +42,7 @@ export default function TenantDashboardLayout({ children }: { children: React.Re
         { icon: BookOpen, label: 'My Courses', href: `/company/${domain}/dashboard/courses`, featureReq: 'courses' },
         { icon: Award, label: 'Certificates', href: `/company/${domain}/dashboard/certificates`, featureReq: 'certificates' },
         { icon: BarChart3, label: 'Progress', href: `/company/${domain}/dashboard/progress`, featureReq: 'analytics' },
+        { icon: MessageSquare, label: 'Support', href: `/company/${domain}/dashboard/support`, featureReq: null },
         { icon: Bell, label: 'Notifications', href: `/company/${domain}/dashboard/notifications`, featureReq: 'notifications' },
     ];
 
@@ -118,8 +119,12 @@ export default function TenantDashboardLayout({ children }: { children: React.Re
                     </button>
                 </div>
 
-                <div style={{ padding: '32px', flex: 1 }}>
+                <div style={{ padding: '32px', flex: 1, position: 'relative' }}>
                     {children}
+                    {/* Floating Chat Button */}
+                    <Link href={`/company/${domain}/dashboard/support`} style={{ position: 'fixed', bottom: '32px', right: '32px', width: '56px', height: '56px', borderRadius: '50%', background: '#b48648', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 25px rgba(180, 134, 72, 0.4)', zIndex: 100, transition: 'transform 0.2s ease', cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
+                        <MessageSquare size={26} />
+                    </Link>
                 </div>
             </div>
         </div>

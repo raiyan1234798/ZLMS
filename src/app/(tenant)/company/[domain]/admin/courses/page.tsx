@@ -2,17 +2,17 @@
 "use client";
 
 import { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { MOCK_COMPANIES, getCoursesByCompany } from '@/data/mockDb';
 import { KanbanBoard } from '@/components/ui/KanbanBoard';
 import { Plus, Wand2, X } from 'lucide-react';
 
 export default function CourseManagement() {
     const params = useParams();
+    const router = useRouter();
     const domain = params.domain as string;
     const company = MOCK_COMPANIES.find(c => c.subdomain === domain);
     const courses = company ? getCoursesByCompany(company.id) : [];
-    const [showModal, setShowModal] = useState(false);
 
     // Build Kanban data dynamically
     const items: Record<string, { id: string; content: string }> = {};
@@ -44,7 +44,7 @@ export default function CourseManagement() {
                     <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px' }}>
                         <Wand2 size={16} /> AI Course Builder
                     </button>
-                    <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: 'var(--tenant-primary, var(--primary))' }} onClick={() => setShowModal(true)}>
+                    <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: 'var(--tenant-primary, var(--primary))' }} onClick={() => router.push(`/company/${domain}/admin/courses/create`)}>
                         <Plus size={16} /> Create Course
                     </button>
                 </div>
@@ -70,73 +70,6 @@ export default function CourseManagement() {
             <div className="card">
                 <KanbanBoard initialColumns={columns} items={items} />
             </div>
-
-            {/* Create Course Modal */}
-            {showModal && (
-                <div style={{
-                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex',
-                    alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px'
-                }}>
-                    <div style={{
-                        background: 'white', borderRadius: '16px', padding: '40px', width: '100%', maxWidth: '600px',
-                        maxHeight: '80vh', overflow: 'auto'
-                    }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
-                            <h2 style={{ fontSize: '1.3rem' }}>Create New Course</h2>
-                            <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
-                                <X size={24} color="var(--text-muted)" />
-                            </button>
-                        </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '6px', color: 'var(--text-muted)' }}>Course Title *</label>
-                                <input type="text" placeholder="e.g. Advanced React Patterns" style={{
-                                    width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)',
-                                    fontSize: '0.9rem', outline: 'none', fontFamily: 'inherit'
-                                }} />
-                            </div>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '6px', color: 'var(--text-muted)' }}>Description *</label>
-                                <textarea placeholder="Describe the course..." rows={3} style={{
-                                    width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)',
-                                    fontSize: '0.9rem', outline: 'none', fontFamily: 'inherit', resize: 'vertical'
-                                }} />
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '6px', color: 'var(--text-muted)' }}>Category</label>
-                                    <select style={{
-                                        width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)',
-                                        fontSize: '0.9rem', outline: 'none', fontFamily: 'inherit'
-                                    }}>
-                                        <option>Technology</option>
-                                        <option>Sales & Marketing</option>
-                                        <option>Compliance</option>
-                                        <option>Leadership</option>
-                                        <option>Onboarding</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '6px', color: 'var(--text-muted)' }}>Difficulty</label>
-                                    <select style={{
-                                        width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)',
-                                        fontSize: '0.9rem', outline: 'none', fontFamily: 'inherit'
-                                    }}>
-                                        <option>Beginner</option>
-                                        <option>Intermediate</option>
-                                        <option>Advanced</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-                                <button className="btn-secondary" style={{ flex: 1, padding: '12px' }} onClick={() => setShowModal(false)}>Cancel</button>
-                                <button className="btn-primary" style={{ flex: 1, padding: '12px', background: 'var(--tenant-primary, var(--primary))' }} onClick={() => setShowModal(false)}>Create Course</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

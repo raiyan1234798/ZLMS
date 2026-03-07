@@ -1,11 +1,10 @@
-
 "use client";
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { MOCK_COMPANIES } from '@/data/mockDb';
 import { Building2, Mail, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db, googleProvider } from '@/lib/firebase';
 
 export default function TenantLoginPage() {
@@ -26,17 +25,75 @@ export default function TenantLoginPage() {
         return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Company not found</div>;
     }
 
-    const checkAndCreateUserDoc = async (user: any) => {
+    const getRouteForRole = (role: string) => {
+        if (role === 'SUPER_ADMIN') return '/admin';
+        if (role === 'ADMIN' || role === 'COMPANY_ADMIN' || role === 'TRAINER') return `/company/${domain}/admin`;
+        return `/company/${domain}/dashboard/courses`;
+    };
+
+    const checkAndCreateUserDoc = async (user: any): Promise<{ active: boolean; role: string }> => {
         const docRef = doc(db, 'users', user.uid);
         const docSnap = await getDoc(docRef);
-        if (!docSnap.exists()) {
-            await setDoc(docRef, {
-                email: user.email,
-                name: user.displayName || 'New User',
-                role: 'USER',
-                companyId: company.id,
-                createdAt: new Date().toISOString()
+
+        if (docSnap.exists()) {
+            const userData = docSnap.data();
+
+            if (userData.role === 'SUPER_ADMIN' || user.email === 'abubackerraiyan@gmail.com') {
+                return { active: true, role: userData.role || 'SUPER_ADMIN' };
+            }
+
+            if (userData.companyId !== company.id) {
+                await auth.signOut();
+                throw new Error("You do not have access to this portal.");
+            }
+            if (userData.status === 'PENDING') {
+                await auth.signOut();
+                throw new Error("Your account is pending approval by the admin.");
+            }
+            return { active: true, role: userData.role || 'USER' };
+        } else {
+            // Document doesn't exist, check for PRE_APPROVED via email
+            const q = query(collection(db, 'users'), where('email', '==', user.email), where('companyId', '==', company.id));
+            const querySnapshot = await getDocs(q);
+
+            let foundPreApproved = false;
+            let targetRole = 'USER';
+            let preApprovedDocId = null;
+
+            querySnapshot.forEach((doc) => {
+                if (doc.data().status === 'PRE_APPROVED' || doc.data().status === 'ACTIVE') {
+                    foundPreApproved = true;
+                    targetRole = doc.data().role;
+                    preApprovedDocId = doc.id;
+                }
             });
+
+            if (foundPreApproved && preApprovedDocId) {
+                // Upgrade to ACTIVE
+                await setDoc(docRef, {
+                    email: user.email,
+                    name: user.displayName || 'New User',
+                    role: targetRole,
+                    companyId: company.id,
+                    status: 'ACTIVE',
+                    createdAt: new Date().toISOString()
+                });
+                // Remove the pre-approved placeholder
+                await deleteDoc(doc(db, 'users', preApprovedDocId));
+                return { active: true, role: targetRole };
+            } else {
+                // Not pre-approved, create as PENDING
+                await setDoc(docRef, {
+                    email: user.email,
+                    name: user.displayName || 'New User',
+                    role: 'USER',
+                    companyId: company.id,
+                    status: 'PENDING',
+                    createdAt: new Date().toISOString()
+                });
+                await auth.signOut();
+                return { active: false, role: 'USER' };
+            }
         }
     };
 
@@ -45,15 +102,15 @@ export default function TenantLoginPage() {
         setErrorMsg('');
         try {
             const result = await signInWithPopup(auth, googleProvider);
-            await checkAndCreateUserDoc(result.user);
-            router.push(`/company/${domain}/dashboard/courses`);
-        } catch (error: any) {
-            if (error.code === 'auth/unauthorized-domain') {
-                setErrorMsg('Configuration Required: Please add your domain (zlms.pages.dev) to the Firebase Console -> Authentication -> Settings -> Authorized Domains.');
+            const { active, role } = await checkAndCreateUserDoc(result.user);
+            if (active) {
+                router.push(getRouteForRole(role));
             } else {
-                setErrorMsg(error.message);
+                setRequested(true);
+                setIsLoading(false);
             }
-            setIsLoading(false);
+        } catch (error: any) {
+            handleAuthError(error);
         }
     };
 
@@ -63,25 +120,59 @@ export default function TenantLoginPage() {
         setErrorMsg('');
         try {
             if (isLogin) {
-                const result = await signInWithEmailAndPassword(auth, email, password);
-                await checkAndCreateUserDoc(result.user);
-                router.push(`/company/${domain}/dashboard/courses`);
+                let result;
+                try {
+                    result = await signInWithEmailAndPassword(auth, email, password);
+                } catch (innerError: any) {
+                    if (innerError.code === 'auth/invalid-credential' || innerError.code === 'auth/user-not-found') {
+                        const q = query(collection(db, 'users'), where('email', '==', email), where('companyId', '==', company.id));
+                        const querySnapshot = await getDocs(q);
+                        let isAuthorized = false;
+                        querySnapshot.forEach((doc) => {
+                            if (doc.data().status === 'PRE_APPROVED' || doc.data().status === 'ACTIVE') isAuthorized = true;
+                        });
+
+                        if (isAuthorized) {
+                            result = await createUserWithEmailAndPassword(auth, email, password);
+                        } else {
+                            throw innerError;
+                        }
+                    } else {
+                        throw innerError;
+                    }
+                }
+                const { active, role } = await checkAndCreateUserDoc(result.user);
+                if (active) {
+                    router.push(getRouteForRole(role));
+                } else {
+                    setRequested(true);
+                    setIsLoading(false);
+                }
             } else {
-                // If it's sign up (Request Access workflow), we create an account with a dummy password if they don't provide one, or just require a password. Let's require a password.
                 const result = await createUserWithEmailAndPassword(auth, email, password);
-                await checkAndCreateUserDoc(result.user);
-                setRequested(true);
-                setIsLoading(false);
+                const { active, role } = await checkAndCreateUserDoc(result.user);
+                if (active) {
+                    router.push(getRouteForRole(role));
+                } else {
+                    setRequested(true);
+                    setIsLoading(false);
+                }
             }
         } catch (error: any) {
-            if (error.code === 'auth/unauthorized-domain') {
-                setErrorMsg('Configuration Required: Please add your domain (zlms.pages.dev) to the Firebase Console -> Authentication -> Settings -> Authorized Domains.');
-            } else {
-                setErrorMsg(error.message);
-            }
-            setIsLoading(false);
+            handleAuthError(error);
         }
     };
+
+    const handleAuthError = (error: any) => {
+        if (error.code === 'auth/unauthorized-domain') {
+            setErrorMsg('Configuration Required: Please add your domain to the Firebase Console -> Authentication -> Settings -> Authorized Domains.');
+        } else if (error.message) {
+            setErrorMsg(error.message.replace('Firebase: ', ''));
+        } else {
+            setErrorMsg('An error occurred during authentication.');
+        }
+        setIsLoading(false);
+    }
 
     return (
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', position: 'relative', overflow: 'hidden', background: 'var(--background)' }}>

@@ -9,7 +9,7 @@ import { MOCK_COMPANIES } from '@/data/mockDb';
 import {
     LayoutDashboard, Users, BookOpen, BarChart3, Settings,
     Award, Bell, Menu, X, ChevronRight, LogOut, Kanban,
-    Upload, UserPlus, Palette
+    Upload, UserPlus, Palette, MessageSquare
 } from 'lucide-react';
 
 export default function CompanyAdminLayout({ children }: { children: React.ReactNode }) {
@@ -40,7 +40,7 @@ export default function CompanyAdminLayout({ children }: { children: React.React
 
     const allNavItems = [
         { icon: LayoutDashboard, label: 'Overview', href: `/company/${domain}/admin`, featureReq: null },
-        { icon: Users, label: 'Users', href: `/company/${domain}/admin/users`, featureReq: null },
+        { icon: Users, label: 'Manage Users', href: `/company/${domain}/admin/users`, featureReq: null },
         { icon: BookOpen, label: 'Courses', href: `/company/${domain}/admin/courses`, featureReq: 'courses' },
         { icon: Kanban, label: 'Course Board', href: `/company/${domain}/admin/courses`, featureReq: 'courses' },
         { icon: UserPlus, label: 'Invite Users', href: `/company/${domain}/admin/invite`, featureReq: null },
@@ -49,6 +49,7 @@ export default function CompanyAdminLayout({ children }: { children: React.React
         { icon: Upload, label: 'Materials', href: `/company/${domain}/admin/materials`, featureReq: null },
         { icon: Palette, label: 'Branding', href: `/company/${domain}/admin/branding`, featureReq: null },
         { icon: Bell, label: 'Notifications', href: `/company/${domain}/admin/notifications`, featureReq: 'notifications' },
+        { icon: MessageSquare, label: 'Support', href: `/company/${domain}/admin/support`, featureReq: null },
         { icon: Settings, label: 'Settings', href: `/company/${domain}/admin/settings`, featureReq: null },
     ];
 
@@ -130,8 +131,12 @@ export default function CompanyAdminLayout({ children }: { children: React.React
                         </button>
                     </div>
                 </div>
-                <div style={{ padding: '32px', flex: 1 }}>
+                <div style={{ padding: '32px', flex: 1, position: 'relative' }}>
                     {children}
+                    {/* Floating Chat Button */}
+                    <Link href={`/company/${domain}/admin/support`} style={{ position: 'fixed', bottom: '32px', right: '32px', width: '56px', height: '56px', borderRadius: '50%', background: '#b48648', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 25px rgba(180, 134, 72, 0.4)', zIndex: 100, transition: 'transform 0.2s ease', cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
+                        <MessageSquare size={26} />
+                    </Link>
                 </div>
             </div>
         </div >

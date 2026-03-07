@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 import {
     LayoutDashboard, Users, BookOpen, BarChart3, Settings,
     Shield, CreditCard, Bell, Menu, X, ChevronRight,
-    Building2, Activity, Kanban
+    Building2, Activity, Kanban, MessageSquare
 } from 'lucide-react';
 
 const navItems = [
@@ -21,6 +22,7 @@ const navItems = [
     { icon: BarChart3, label: 'Analytics', href: '/admin/analytics' },
     { icon: Activity, label: 'Activity Logs', href: '/admin/logs' },
     { icon: Bell, label: 'Notifications', href: '/admin/notifications' },
+    { icon: MessageSquare, label: 'Support', href: '/admin/support' },
     { icon: Settings, label: 'Settings', href: '/admin/settings' },
 ];
 
@@ -35,11 +37,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user && user.email === 'abubackerraiyan@gmail.com') {
-                setIsAuthorized(true);
+            if (user) {
+                if (user.email === 'abubackerraiyan@gmail.com') {
+                    setIsAuthorized(true);
+                } else {
+                    const docRef = doc(db, 'users', user.uid);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists() && docSnap.data().role === 'SUPER_ADMIN') {
+                        setIsAuthorized(true);
+                    } else {
+                        setIsAuthorized(false);
+                        if (!pathname.startsWith('/admin/login')) {
+                            router.push('/admin/login');
+                        }
+                    }
+                }
             } else {
                 setIsAuthorized(false);
-                if (pathname !== '/admin/login') {
+                if (!pathname.startsWith('/admin/login')) {
                     router.push('/admin/login');
                 }
             }
@@ -53,7 +68,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Validating super admin access...</div>;
     }
 
-    if (pathname === '/admin/login') {
+    if (pathname.startsWith('/admin/login')) {
         return <>{children}</>;
     }
 
@@ -150,8 +165,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </div>
 
                 {/* Page content */}
-                <div style={{ padding: '32px', flex: 1 }}>
+                <div style={{ padding: '32px', flex: 1, position: 'relative' }}>
                     {children}
+                    {/* Floating Chat Button */}
+                    <Link href="/admin/support" style={{ position: 'fixed', bottom: '32px', right: '32px', width: '56px', height: '56px', borderRadius: '50%', background: '#b48648', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 25px rgba(180, 134, 72, 0.4)', zIndex: 100, transition: 'transform 0.2s ease', cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
+                        <MessageSquare size={26} />
+                    </Link>
                 </div>
             </div>
         </div>

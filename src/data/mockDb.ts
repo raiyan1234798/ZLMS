@@ -85,6 +85,18 @@ export const MOCK_COMPANIES: Company[] = [
         },
         features: ['courses', 'video', 'quizzes', 'analytics', 'certificates', 'teams', 'assignments'],
         status: 'ACTIVE'
+    },
+    {
+        id: 'c8',
+        name: 'Luxaar Learning',
+        subdomain: 'luxaar',
+        branding: {
+            themeColor: '#7c3aed',
+            dashboardTitle: 'Luxaar Learning Portal',
+            landingPageText: 'Welcome to Luxaar Learning. Exclusive technical and management courses.'
+        },
+        features: ['courses', 'video', 'quizzes', 'analytics', 'certificates', 'teams'],
+        status: 'ACTIVE'
     }
 ];
 
@@ -137,6 +149,10 @@ export const MOCK_USERS: User[] = [
     { id: 'u29', companyId: 'c7', name: 'Demo Trainer', email: 'trainer@demo.com', role: 'TRAINER' },
     { id: 'u30', companyId: 'c7', name: 'Demo User 1', email: 'user1@demo.com', role: 'USER' },
     { id: 'u31', companyId: 'c7', name: 'Demo User 2', email: 'user2@demo.com', role: 'USER' },
+
+    // ── Luxaar Learning (c8) ──
+    { id: 'u32', companyId: 'c8', name: 'Luxaar Admin', email: 'admin@luxaar.com', role: 'COMPANY_ADMIN' },
+    { id: 'u33', companyId: 'c8', name: 'Luxaar Learner', email: 'user@luxaar.com', role: 'USER' }
 ];
 
 // ─── COURSES ────────────────────────────────────────────────────────────────────

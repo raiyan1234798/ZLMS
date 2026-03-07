@@ -15,21 +15,41 @@ export default function AdminLoginPage() {
     const [errorMsg, setErrorMsg] = useState('');
 
     const checkSuperAdminAndRedirect = async (user: any) => {
-        if (user.email !== 'abubackerraiyan@gmail.com') {
+        const docRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(docRef);
+
+        const isOriginalAdmin = user.email === 'abubackerraiyan@gmail.com' || user.email === 'admin@zlms.com';
+        const isAssignedAdmin = docSnap.exists() && docSnap.data().role === 'SUPER_ADMIN';
+
+        // Also check if the user was pre-approved as SUPER_ADMIN by email match
+        let isPreApprovedSuperAdmin = false;
+        let preApprovedDocId = null;
+        if (!isOriginalAdmin && !isAssignedAdmin) {
+            const { collection: col, query: q, where, getDocs: gd } = await import('firebase/firestore');
+            const preCheckQuery = q(col(db, 'users'), where('email', '==', user.email), where('role', '==', 'SUPER_ADMIN'));
+            const preCheckSnap = await gd(preCheckQuery);
+            preCheckSnap.forEach((d: any) => {
+                if (d.data().status === 'ACTIVE' || d.data().status === 'PRE_APPROVED') {
+                    isPreApprovedSuperAdmin = true;
+                }
+            });
+        }
+
+        if (!isOriginalAdmin && !isAssignedAdmin && !isPreApprovedSuperAdmin) {
             setErrorMsg('Access denied. You are not an authorized super admin.');
+            await auth.signOut();
             setIsLoading(false);
             return;
         }
 
-        // Set super admin doc if not exists
-        const docRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(docRef);
+        // Set super admin doc if not exists or update role
         if (!docSnap.exists() || docSnap.data().role !== 'SUPER_ADMIN') {
             await setDoc(docRef, {
                 email: user.email,
                 name: user.displayName || 'Platform Owner',
                 role: 'SUPER_ADMIN',
                 companyId: 'platform',
+                status: 'ACTIVE',
                 createdAt: new Date().toISOString()
             }, { merge: true });
         }
@@ -58,13 +78,35 @@ export default function AdminLoginPage() {
         setIsLoading(true);
         setErrorMsg('');
         try {
-            const result = await signInWithEmailAndPassword(auth, email, password);
+            let result;
+            try {
+                result = await signInWithEmailAndPassword(auth, email, password);
+            } catch (innerError: any) {
+                if (innerError.code === 'auth/invalid-credential' || innerError.code === 'auth/user-not-found') {
+                    let isPreApproved = false;
+                    const { collection: col, query: q, where, getDocs: gd } = await import('firebase/firestore');
+                    const preCheckQuery = q(col(db, 'users'), where('email', '==', email), where('role', '==', 'SUPER_ADMIN'));
+                    const preCheckSnap = await gd(preCheckQuery);
+                    preCheckSnap.forEach((d: any) => {
+                        if (d.data().status === 'ACTIVE' || d.data().status === 'PRE_APPROVED') isPreApproved = true;
+                    });
+
+                    if (email === 'admin@zlms.com' || email === 'abubackerraiyan@gmail.com' || isPreApproved) {
+                        const { createUserWithEmailAndPassword } = await import('firebase/auth');
+                        result = await createUserWithEmailAndPassword(auth, email, password);
+                    } else {
+                        throw innerError;
+                    }
+                } else {
+                    throw innerError;
+                }
+            }
             await checkSuperAdminAndRedirect(result.user);
         } catch (error: any) {
             if (error.code === 'auth/unauthorized-domain') {
                 setErrorMsg('Configuration Required: Please add your domain (zlms.pages.dev) to the Firebase Console -> Authentication -> Settings -> Authorized Domains.');
             } else {
-                setErrorMsg(error.message);
+                setErrorMsg(error.message.replace('Firebase: ', ''));
             }
             setIsLoading(false);
         }

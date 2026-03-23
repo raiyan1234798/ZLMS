@@ -1,0 +1,44 @@
+{
+  "name": "zlms",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "pages:build": "next-on-pages --experimental-minify",
+    "pages:deploy": "wrangler pages deploy"
+  },
+  "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
+    "@react-spring/web": "^10.0.3",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "firebase": "^12.10.0",
+    "framer-motion": "^12.35.0",
+    "lucide-react": "^0.577.0",
+    "next": "16.1.6",
+    "next-themes": "^0.4.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "sass": "^1.97.3",
+    "tailwind-merge": "^3.5.0",
+    "three": "^0.183.2",
+    "zustand": "^5.0.11"
+  },
+  "devDependencies": {
+    "@cloudflare/next-on-pages": "^1.13.16",
+    "@cloudflare/workers-types": "^4.20260305.1",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/three": "^0.183.1",
+    "autoprefixer": "^10.4.27",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5"
+  }
+}
